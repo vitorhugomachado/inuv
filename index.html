@@ -1,0 +1,1499 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>INUV FIBRAS 🚀 - Planejamento e Controle de Estoque de Fibra</title>
+  <!-- Google Fonts - Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Lucide Icons for clean look -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- CSS Stylesheet -->
+  <link rel="stylesheet" href="index.css">
+  <!-- Preload critical assets -->
+  <link rel="preload" href="app.js" as="script">
+  <link rel="preload" href="index.css" as="style">
+  <!-- DNS prefetch para serviços externos -->
+  <link rel="dns-prefetch" href="https://fonts.googleapis.com">
+  <link rel="dns-prefetch" href="https://unpkg.com">
+  <link rel="dns-prefetch" href="https://api.maptiler.com">
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="logo.png">
+  <link rel="apple-touch-icon" href="logo.png">
+</head>
+<body>
+
+  <!-- Tela de Login Premium -->
+  <div id="login-container" class="login-container">
+    <div class="login-card">
+      <div class="login-logo-box">
+        <img src="logo.png" alt="INUV FIBRAS Logo" class="login-logo">
+      </div>
+      <h2 class="login-title">INUV FIBRAS</h2>
+      <p class="login-subtitle">Planejamento e Controle de Estoque</p>
+      
+      <form id="login-form" novalidate>
+        <div class="form-group">
+          <label for="login-username">Usuário</label>
+          <div class="input-with-icon">
+            <i data-lucide="user" class="input-icon"></i>
+            <input type="text" id="login-username" placeholder="Digite seu usuário" required autocomplete="username">
+          </div>
+          <span class="error-message" id="error-login-username">Informe o usuário.</span>
+        </div>
+        
+        <div class="form-group" style="margin-top: 16px;">
+          <label for="login-password">Senha</label>
+          <div class="input-with-icon">
+            <i data-lucide="lock" class="input-icon"></i>
+            <input type="password" id="login-password" placeholder="Digite sua senha" required autocomplete="current-password">
+          </div>
+          <span class="error-message" id="error-login-password">Informe a senha.</span>
+        </div>
+        
+        <button type="submit" class="btn btn-primary btn-login" style="margin-top: 24px; width: 100%; justify-content: center;">
+          <span>Entrar no Sistema</span>
+          <i data-lucide="arrow-right"></i>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Layout Wrapper -->
+  <div class="app-container" style="display: none;">
+
+    <!-- Sidebar / Mobile Navigation -->
+    <aside class="sidebar" id="sidebar">
+      <div class="logo-container">
+        <div class="logo-icon">
+          <img src="logo.png" alt="INUV FIBRAS Logo" style="width: 32px; height: 32px; object-fit: contain; border-radius: 6px;">
+        </div>
+        <span class="logo-text">INUV FIBRAS</span>
+        <!-- Hamburger toggle -->
+        <button class="btn-hamburger" id="btn-hamburger" title="Recolher menu">
+          <i data-lucide="chevron-left"></i>
+        </button>
+      </div>
+
+      <nav class="nav-menu">
+        <a href="#dashboard" class="nav-link active" data-target="dashboard" data-label="Dashboard">
+          <i data-lucide="layout-dashboard"></i>
+          <span>Dashboard</span>
+        </a>
+        <a href="#estoque" class="nav-link" data-target="estoque" data-label="Estoque">
+          <i data-lucide="package"></i>
+          <span>Estoque</span>
+        </a>
+        <a href="#lancamentos" class="nav-link" data-target="lancamentos" data-label="Lançamentos">
+          <i data-lucide="cable"></i>
+          <span>Lançamentos</span>
+        </a>
+        <a href="#entregas" class="nav-link" data-target="entregas" data-label="Entregas">
+          <i data-lucide="truck"></i>
+          <span>Entregas</span>
+        </a>
+        <a href="#campo" class="nav-link" data-target="campo" data-label="Consumo">
+          <i data-lucide="flame"></i>
+          <span>Consumo</span>
+        </a>
+        <a href="#relatorios" class="nav-link" data-target="relatorios" data-label="Relatórios">
+          <i data-lucide="bar-chart-2"></i>
+          <span>Relatórios</span>
+        </a>
+        <a href="#equipes" class="nav-link" data-target="equipes" data-label="Equipes">
+          <i data-lucide="users"></i>
+          <span>Equipes</span>
+        </a>
+        <a href="#configuracoes" class="nav-link" data-target="configuracoes" data-label="Configurações">
+          <i data-lucide="settings"></i>
+          <span>Configurações</span>
+        </a>
+        <a href="#" class="nav-link" id="btn-logout" data-label="Sair" style="margin-top: auto; border-top: 1px solid var(--border-color); padding-top: 12px; color: #ff4d4d;">
+          <i data-lucide="log-out" style="color: #ff4d4d;"></i>
+          <span>Sair</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="profile-badge">
+          <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=256&auto=format&fit=crop" class="profile-avatar" alt="Avatar">
+          <div class="profile-info">
+            <span class="profile-name">Lucas Almeida</span>
+            <span class="profile-role">Administrador</span>
+          </div>
+          <i data-lucide="chevron-down" style="width: 14px; height: 14px; margin-left: auto; opacity: 0.6;"></i>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <div class="content-wrapper">
+      
+      <!-- Top Header (INUV FIBRAS Styled) -->
+      <header class="app-header">
+        <div class="header-left">
+          <h1 id="page-title">Dashboard</h1>
+          <p id="page-subtitle" class="text-secondary">Visão geral do seu controle de lançamentos</p>
+        </div>
+        
+        <!-- Top capsule navigation icon bar -->
+        <!-- Top Deployment Selector -->
+        <div class="top-deployment-selector-wrapper" style="position: relative; display: flex; align-items: center; gap: 10px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-full); padding: 6px 32px 6px 12px; box-shadow: var(--shadow-sm); transition: all 0.2s ease;">
+          <div style="width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: rgba(0, 71, 204, 0.1); color: var(--color-primary); flex-shrink: 0;">
+            <i data-lucide="cable" style="width: 14px; height: 14px;"></i>
+          </div>
+          <div style="display: flex; flex-direction: column; min-width: 160px; max-width: 240px;">
+            <span style="font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); line-height: 1; margin-bottom: 2px;">Lançamento Ativo</span>
+            <select id="top-deployment-select" style="background: transparent; border: 0; color: var(--text-primary); font-size: 13px; font-weight: 700; outline: none; cursor: pointer; font-family: 'Inter', sans-serif; appearance: none; -webkit-appearance: none; width: 100%; margin: 0; padding: 0;">
+              <!-- Rendered dynamically -->
+            </select>
+          </div>
+          <i data-lucide="chevron-down" style="position: absolute; right: 14px; pointer-events: none; width: 14px; height: 14px; opacity: 0.7; color: var(--text-secondary);"></i>
+        </div>
+
+        </div>
+
+      </header>
+
+      <!-- SEÇÃO 1: DASHBOARD (INUV FIBRAS Dribbble/Behance Style) -->
+      <section id="dashboard-section" class="app-section active">
+        
+        <!-- Hero Layout Container -->
+        <div class="dashboard-hero-container">
+          
+          <!-- Coluna 1: Lançamento em Destaque & Performance -->
+          <div class="hero-left-column">
+            <!-- Card Lançamento Destaque -->
+            <div class="highlight-card" id="dashboard-highlight-card">
+              <div class="highlight-card-header">
+                <span class="highlight-id">#A-BB84610</span>
+                <span class="badge badge-green">Em Andamento</span>
+              </div>
+              <div class="highlight-metrics">
+                <div class="metric-item">
+                  <span class="metric-num">2.96 km</span>
+                  <span class="metric-lbl">Distância</span>
+                </div>
+                <div class="metric-item">
+                  <span class="metric-num">4h 55 min</span>
+                  <span class="metric-lbl">Tempo</span>
+                </div>
+                <div class="metric-item">
+                  <span class="metric-num">9:43 AM</span>
+                  <span class="metric-lbl">Atualizado</span>
+                </div>
+              </div>
+              
+              <!-- Gradient Slider/Progress -->
+              <div class="gradient-slider-container">
+                <div class="slider-track">
+                  <div class="slider-fill"></div>
+                  <div class="slider-thumb"></div>
+                </div>
+              </div>
+              
+              <div class="route-details">
+                <div class="route-point">
+                  <span class="point-dot dot-origin"></span>
+                  <span class="point-text">2450 E 12th St, Oakland</span>
+                </div>
+                <div class="route-point">
+                  <span class="point-dot dot-dest"></span>
+                  <span class="point-text">610 S Grand Ave, Los Angeles</span>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Card Custo Real do Lançamento -->
+            <div class="performance-widget" id="launch-cost-widget" style="position:relative; overflow:hidden;">
+              <!-- subtle gradient accent -->
+              <div style="position:absolute;top:0;right:0;width:80px;height:80px;background:radial-gradient(circle at top right,rgba(0, 71, 204,0.18),transparent 70%);pointer-events:none;"></div>
+              <div class="widget-header">
+                <span class="widget-title">Custo até o momento</span>
+                <span class="widget-subtitle" id="launch-cost-subtitle">Consumo real registrado</span>
+              </div>
+              <div class="widget-body" style="flex-direction:column; align-items:flex-start; gap:10px;">
+                <div style="display:flex; flex-direction:column;">
+                  <span id="launch-cost-value" style="font-size:22px; font-weight:800; color:var(--text-primary); line-height:1; letter-spacing:-0.5px;">R$ 0,00</span>
+                  <span style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--color-primary); margin-top:4px;">Custo Real Consumido</span>
+                </div>
+                <!-- Progress bar: real vs planejado -->
+                <div style="width:100%;">
+                  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                    <span style="font-size:10px; color:var(--text-secondary); font-weight:500;">vs. Planejado</span>
+                    <span id="launch-cost-pct" style="font-size:11px; font-weight:700; color:var(--color-primary);">0%</span>
+                  </div>
+                  <div style="height:6px; background:var(--border-color); border-radius:99px; overflow:hidden;">
+                    <div id="launch-cost-bar" style="height:100%; width:0%; background:linear-gradient(90deg,var(--color-primary),#0035A0); border-radius:99px; transition:width 0.6s ease;"></div>
+                  </div>
+                </div>
+                <!-- Linha de detalhe -->
+                <div style="display:flex; gap:12px; width:100%; border-top:1px solid var(--border-color); padding-top:8px; margin-top:2px;">
+                  <div style="display:flex; flex-direction:column;">
+                    <span style="font-size:10px; color:var(--text-secondary); font-weight:500;">Planejado</span>
+                    <span id="launch-cost-planned" style="font-size:12px; font-weight:700; color:var(--text-primary);">R$ 0,00</span>
+                  </div>
+                  <div style="display:flex; flex-direction:column;">
+                    <span style="font-size:10px; color:var(--text-secondary); font-weight:500;">Consumos</span>
+                    <span id="launch-cost-count" style="font-size:12px; font-weight:700; color:var(--text-primary);">0 registros</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+
+          </div>
+          
+          <!-- Coluna 2: Google Maps Card / Illustration Fallback -->
+          <div class="truck-hero-card" id="dashboard-map-card" style="overflow: hidden; padding: 0; min-height: 380px; position: relative;">
+            <img src="truck_hero.png" alt="Truck Hero Illustration" class="truck-hero-img">
+          </div>
+          
+          <!-- Coluna 3: Três Cards Premium (Materiais em Campo, Estoque Valorado, Circular Custo) -->
+          <div class="hero-right-column">
+            
+            <!-- Card 1: Materiais em campo (Green Sparkline style) -->
+            <div class="dribbble-metric-card metric-green">
+              <div class="card-sparkline-bg">
+                <svg viewBox="0 0 100 30" class="sparkline-svg">
+                  <path d="M0,25 Q15,20 30,22 T60,12 T90,5 T100,2" fill="none" stroke="rgba(161, 230, 136, 0.4)" stroke-width="2.5" stroke-linecap="round"></path>
+                </svg>
+              </div>
+              <div class="dribbble-metric-header">
+                <span class="dribbble-metric-title">Materiais em campo</span>
+                <div class="dribbble-metric-icon bg-green-light">
+                  <i data-lucide="truck" class="text-green"></i>
+                </div>
+              </div>
+              <div class="dribbble-metric-value" id="dash-total-field">0</div>
+              <div class="dribbble-metric-footer">
+                <span class="badge-pill-green">93.3% em uso</span>
+                <span class="footer-desc">Volume em obras ativas</span>
+              </div>
+            </div>
+            
+            <!-- Card 2: Receita da Rota / Estoque Valorado (Purple Sparkline style) -->
+            <div class="dribbble-metric-card metric-purple">
+              <div class="card-sparkline-bg">
+                <svg viewBox="0 0 100 30" class="sparkline-svg">
+                  <path d="M0,20 Q20,28 40,15 T70,12 T100,5" fill="none" stroke="rgba(0, 71, 204, 0.3)" stroke-width="2.5" stroke-linecap="round"></path>
+                </svg>
+              </div>
+              <div class="dribbble-metric-header">
+                <span class="dribbble-metric-title">Estoque Valorado</span>
+                <div class="dribbble-metric-icon bg-purple-light">
+                  <i data-lucide="dollar-sign" class="text-purple"></i>
+                </div>
+              </div>
+              <div class="dribbble-metric-value value-small" id="dash-stock-value">R$ 0,00 total valorado</div>
+              <div class="dribbble-metric-footer">
+                <span class="badge-pill-purple">1 Set - 8 Set</span>
+                <span class="footer-desc">Almoxarifado estimado</span>
+              </div>
+            </div>
+            
+            <!-- Card 3: Carga do motor / Custo Total circular gauge -->
+            <div class="dribbble-metric-card metric-gauge">
+              <div class="dribbble-metric-header">
+                <span class="dribbble-metric-title">Custo Total Planejado</span>
+                <div class="dribbble-metric-icon bg-orange-light">
+                  <i data-lucide="gauge" class="text-orange"></i>
+                </div>
+              </div>
+              <div class="gauge-content">
+                <div class="radial-gauge-container">
+                  <svg class="gauge-ring" viewBox="0 0 36 36">
+                    <path class="gauge-ring-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#E2E8F0" stroke-width="3"></path>
+                    <path class="gauge-ring-fill" stroke-dasharray="75, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#D4ED1A" stroke-width="3" stroke-linecap="round"></path>
+                  </svg>
+                  <div class="gauge-value-box">
+                    <span class="gauge-value-num" id="dash-total-cost">R$ 0,00</span>
+                    <span class="gauge-value-lbl">Custo Ativo</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+          </div>
+        </div>
+        
+
+
+      </section>
+
+      <!-- SEÇÃO 2: ESTOQUE -->
+      <section id="estoque-section" class="app-section">
+        <!-- Actions & Filter Bar -->
+        <div class="section-actions-bar">
+          <div class="search-filters-container">
+            <div class="search-wrapper">
+              <i data-lucide="search" class="search-icon"></i>
+              <input type="text" id="material-search" placeholder="Pesquisar por nome do material..." />
+            </div>
+            <div class="filter-wrapper">
+              <select id="material-category-filter">
+                <option value="todos">Todas as Categorias</option>
+                <option value="cabos">Cabo de Fibra</option>
+                <option value="conectores">Conectores / Splitters</option>
+                <option value="ferragens">Ferragens de Fixação</option>
+                <option value="equipamentos">Equipamentos / Ativos</option>
+                <option value="outros">Outros</option>
+              </select>
+            </div>
+          </div>
+          <div class="buttons-group" style="display: flex; gap: 8px;">
+            <button class="btn btn-secondary" id="btn-open-categories" title="Gerenciar Categorias">
+              <i data-lucide="tags"></i>
+              <span>Categorias</span>
+            </button>
+            <button class="btn btn-secondary" id="btn-open-units" title="Gerenciar Unidades">
+              <i data-lucide="ruler"></i>
+              <span>Unidades</span>
+            </button>
+            <button class="btn btn-primary" id="btn-open-add-material">
+              <i data-lucide="plus"></i>
+              <span>Adicionar Material</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Materials Grid -->
+        <div class="materials-grid" id="materials-grid">
+          <!-- Rendered via JS -->
+          <div class="empty-state">
+            <i data-lucide="package-open" class="icon-large"></i>
+            <h3>Nenhum material no estoque</h3>
+            <p>Cadastre materiais clicando no botão acima para iniciar o controle.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- SEÇÃO 3: LANÇAMENTOS -->
+      <section id="lancamentos-section" class="app-section">
+        <!-- Actions Bar -->
+        <div class="section-actions-bar">
+          <div class="search-filters-container">
+            <div class="search-wrapper">
+              <i data-lucide="search" class="search-icon"></i>
+              <input type="text" id="deployment-search" placeholder="Pesquisar por cidade, bairro ou responsável..." />
+            </div>
+            <div class="filter-wrapper">
+              <select id="deployment-status-filter">
+                <option value="todos">Todos os Status</option>
+                <option value="planejamento">Em Planejamento</option>
+                <option value="em_andamento">Em Andamento</option>
+                <option value="finalizado">Finalizados</option>
+              </select>
+            </div>
+          </div>
+          <button class="btn btn-secondary" id="btn-open-add-deployment">
+            <i data-lucide="plus"></i>
+            <span>Novo Lançamento</span>
+          </button>
+        </div>
+
+        <!-- Deployments Grid -->
+        <div class="deployments-grid" id="deployments-grid">
+          <!-- Rendered via JS -->
+          <div class="empty-state">
+            <i data-lucide="milestone" class="icon-large"></i>
+            <h3>Nenhum lançamento registrado</h3>
+            <p>Crie lançamentos ativos enviando materiais para o campo.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- SEÇÃO 4: ENTREGAS -->
+      <section id="entregas-section" class="app-section">
+        <!-- Delivery Form Card -->
+        <div class="details-panel" style="margin-bottom: 24px;">
+          <div class="panel-header">
+            <h2 class="panel-title flex-align">
+              <i data-lucide="truck" class="icon-indigo"></i>
+              Registrar Nova Entrega para Equipe
+            </h2>
+          </div>
+          <form id="delivery-form" novalidate style="padding: 0;">
+            <div class="form-row">
+              <div class="form-group col-6">
+                <label for="delivery-deployment-id">Lançamento / Obra <span class="required">*</span></label>
+                <select id="delivery-deployment-id" required>
+                  <option value="">Selecione a obra...</option>
+                </select>
+                <span class="error-message" id="error-delivery-deployment-id">Selecione o lançamento.</span>
+              </div>
+              <div class="form-group col-6">
+                <label for="delivery-team">Equipe / Lançador <span class="required">*</span></label>
+                <select id="delivery-team" required>
+                  <option value="">Selecione a equipe...</option>
+                </select>
+                <span class="error-message" id="error-delivery-team">Selecione a equipe.</span>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group col-6">
+                <label for="delivery-material-id">Material <span class="required">*</span></label>
+                <select id="delivery-material-id" required>
+                  <option value="">Selecione o material...</option>
+                </select>
+                <span class="error-message" id="error-delivery-material-id">Selecione o material.</span>
+                <span id="delivery-stock-helper" class="text-secondary" style="font-size: 11px; margin-top: 4px; display: none;"></span>
+              </div>
+              <div class="form-group col-3">
+                <label for="delivery-qty">Qtd. Entregue <span class="required">*</span></label>
+                <input type="number" id="delivery-qty" placeholder="0" min="0.01" step="any" required />
+                <span class="error-message" id="error-delivery-qty">Quantidade inválida.</span>
+              </div>
+              <div class="form-group col-3">
+                <label for="delivery-date">Data da Entrega <span class="required">*</span></label>
+                <input type="date" id="delivery-date" required />
+                <span class="error-message" id="error-delivery-date">Informe a data.</span>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="delivery-notes">Observações</label>
+              <input type="text" id="delivery-notes" placeholder="Ex: Entregue bobina lacrada..." />
+            </div>
+            <div class="modal-footer" style="margin-top: 16px;">
+              <button type="submit" class="btn btn-primary" id="btn-confirm-delivery">
+                <i data-lucide="check"></i>
+                <span>Confirmar Entrega</span>
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Historical Deliveries Card -->
+        <div class="details-panel">
+          <div class="panel-header">
+            <h2 class="panel-title">Histórico de Entregas Realizadas</h2>
+          </div>
+          <div class="planning-table-scroll-wrapper">
+            <table class="planning-table" id="deliveries-table">
+              <thead>
+                <tr>
+                  <th>Obra</th>
+                  <th>Equipe</th>
+                  <th>Material</th>
+                  <th>Qtd. Entregue</th>
+                  <th>Data</th>
+                  <th>Observações</th>
+                  <th style="text-align: right;">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="deliveries-tbody">
+                <!-- Rendered via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- SEÇÃO 5: CAMPO (CONSUMO & DEVOLUÇÕES) -->
+      <section id="campo-section" class="app-section">
+        <!-- Parallel forms layout -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 24px; margin-bottom: 24px;">
+          <!-- Card A: Consumo Real -->
+          <div class="details-panel">
+            <div class="panel-header">
+              <h2 class="panel-title flex-align">
+                <i data-lucide="flame" class="icon-violet"></i>
+                Registrar Consumo Real (Uso)
+              </h2>
+            </div>
+            <form id="consumption-form" novalidate style="padding: 0;">
+              <div class="form-group">
+                <label for="consume-deployment-id">Lançamento / Obra <span class="required">*</span></label>
+                <select id="consume-deployment-id" required>
+                  <option value="">Selecione a obra...</option>
+                </select>
+                <span class="error-message" id="error-consume-deployment-id">Selecione a obra.</span>
+              </div>
+              <div class="form-group">
+                <label for="consume-team">Equipe / Lançador <span class="required">*</span></label>
+                <select id="consume-team" required>
+                  <option value="">Selecione a equipe...</option>
+                </select>
+                <span class="error-message" id="error-consume-team">Selecione a equipe.</span>
+              </div>
+              <div class="form-group">
+                <label for="consume-material-id">Material Entregue <span class="required">*</span></label>
+                <select id="consume-material-id" required>
+                  <option value="">Selecione o material...</option>
+                </select>
+                <span class="error-message" id="error-consume-material-id">Selecione o material.</span>
+                <span id="consume-balance-helper" class="text-secondary" style="font-size: 11px; margin-top: 4px; display: none;"></span>
+              </div>
+              <div class="form-row">
+                <div class="form-group col-6">
+                  <label for="consume-qty">Qtd. Usada <span class="required">*</span></label>
+                  <input type="number" id="consume-qty" placeholder="0" min="0.01" step="any" required />
+                  <span class="error-message" id="error-consume-qty">Quantidade inválida.</span>
+                </div>
+                <div class="form-group col-6">
+                  <label for="consume-date">Data do Uso <span class="required">*</span></label>
+                  <input type="date" id="consume-date" required />
+                  <span class="error-message" id="error-consume-date">Informe a data.</span>
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="consume-responsible">Responsável <span class="required">*</span></label>
+                <input type="text" id="consume-responsible" placeholder="Ex: Encarregado Silva" required />
+                <span class="error-message" id="error-consume-responsible">Informe o responsável pelo reporte.</span>
+              </div>
+              <div class="modal-footer" style="margin-top: 16px;">
+                <button type="submit" class="btn btn-primary" style="background: linear-gradient(135deg, var(--color-violet) 0%, #002080 100%);">
+                  <i data-lucide="check"></i>
+                  <span>Confirmar Consumo</span>
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Card B: Devolução -->
+          <div class="details-panel">
+            <div class="panel-header">
+              <h2 class="panel-title flex-align">
+                <i data-lucide="arrow-left-circle" class="icon-cyan"></i>
+                Registrar Devolução
+              </h2>
+            </div>
+            <form id="return-form" novalidate style="padding: 0;">
+              <div class="form-group">
+                <label for="return-deployment-id">Lançamento / Obra <span class="required">*</span></label>
+                <select id="return-deployment-id" required>
+                  <option value="">Selecione a obra...</option>
+                </select>
+                <span class="error-message" id="error-return-deployment-id">Selecione a obra.</span>
+              </div>
+              <div class="form-group">
+                <label for="return-team">Equipe / Lançador <span class="required">*</span></label>
+                <select id="return-team" required>
+                  <option value="">Selecione a equipe...</option>
+                </select>
+                <span class="error-message" id="error-return-team">Selecione a equipe.</span>
+              </div>
+              <div class="form-group">
+                <label for="return-material-id">Material em Posse <span class="required">*</span></label>
+                <select id="return-material-id" required>
+                  <option value="">Selecione o material...</option>
+                </select>
+                <span class="error-message" id="error-return-material-id">Selecione o material.</span>
+                <span id="return-balance-helper" class="text-secondary" style="font-size: 11px; margin-top: 4px; display: none;"></span>
+              </div>
+              <div class="form-row">
+                <div class="form-group col-6">
+                  <label for="return-qty">Qtd. Devolvida <span class="required">*</span></label>
+                  <input type="number" id="return-qty" placeholder="0" min="0.01" step="any" required />
+                  <span class="error-message" id="error-return-qty">Quantidade inválida.</span>
+                </div>
+                <div class="form-group col-6">
+                  <label for="return-date">Data da Devolução <span class="required">*</span></label>
+                  <input type="date" id="return-date" required />
+                  <span class="error-message" id="error-return-date">Informe a data.</span>
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="return-notes">Observações</label>
+                <input type="text" id="return-notes" placeholder="Ex: Sobra de cabo intacta..." />
+              </div>
+              <div class="modal-footer" style="margin-top: 16px;">
+                <button type="submit" class="btn btn-secondary">
+                  <i data-lucide="check"></i>
+                  <span>Confirmar Devolução</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Team Balances Panel -->
+        <div class="details-panel" style="margin-bottom: 24px;">
+          <div class="panel-header">
+            <h2 class="panel-title flex-align">
+              <i data-lucide="users" class="icon-emerald"></i>
+              Saldos Atuais em Campo (Posse das Equipes)
+            </h2>
+          </div>
+          <div class="planning-table-scroll-wrapper">
+            <table class="planning-table" id="balances-table">
+              <thead>
+                <tr>
+                  <th>Obra / Lançamento</th>
+                  <th>Equipe / Lançador</th>
+                  <th>Material</th>
+                  <th>Total Entregue</th>
+                  <th>Total Usado</th>
+                  <th>Total Devolvido</th>
+                  <th style="font-weight: 700;">Saldo em Campo</th>
+                  <th>Valoração em Campo</th>
+                </tr>
+              </thead>
+              <tbody id="balances-tbody">
+                <!-- Rendered via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- History of Consumptions and Returns -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 24px;">
+          <!-- Consumptions List -->
+          <div class="details-panel">
+            <div class="panel-header">
+              <h3 class="panel-title">Histórico de Consumos</h3>
+            </div>
+            <div class="planning-table-scroll-wrapper">
+              <table class="planning-table">
+                <thead>
+                  <tr>
+                    <th>Equipe</th>
+                    <th>Material</th>
+                    <th>Qtd</th>
+                    <th>Data</th>
+                    <th style="text-align: right;">Ação</th>
+                  </tr>
+                </thead>
+                <tbody id="consumptions-tbody">
+                  <!-- Rendered via JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Returns List -->
+          <div class="details-panel">
+            <div class="panel-header">
+              <h3 class="panel-title">Histórico de Devoluções</h3>
+            </div>
+            <div class="planning-table-scroll-wrapper">
+              <table class="planning-table">
+                <thead>
+                  <tr>
+                    <th>Equipe</th>
+                    <th>Material</th>
+                    <th>Qtd</th>
+                    <th>Data</th>
+                    <th style="text-align: right;">Ação</th>
+                  </tr>
+                </thead>
+                <tbody id="returns-tbody">
+                  <!-- Rendered via JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SEÇÃO 6: RELATÓRIOS E AUDITORIA -->
+      <section id="relatorios-section" class="app-section">
+        <!-- Dropdown Seletor de Obra -->
+        <div class="section-actions-bar" style="margin-bottom: 24px; justify-content: flex-start; gap: 16px;">
+          <div class="filter-wrapper" style="flex-grow: 1; max-width: 400px;">
+            <label for="report-deployment-id" style="display: block; margin-bottom: 6px; font-weight: 600;">Filtrar Auditoria por Lançamento:</label>
+            <select id="report-deployment-id" style="width: 100%;">
+              <option value="">Selecione o lançamento...</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Budget comparison cards grid -->
+        <div class="metrics-grid" id="report-metrics-grid" style="display: none;">
+          <!-- Card A: Custo Planejado -->
+          <div class="metric-card bg-indigo">
+            <div class="metric-header">
+              <span class="metric-title">Custo Planejado</span>
+              <div class="metric-icon-wrapper bg-light-indigo">
+                <i data-lucide="dollar-sign" class="icon-indigo"></i>
+              </div>
+            </div>
+            <div class="metric-value" id="report-cost-planned">R$ 0,00</div>
+            <div class="metric-footer">
+              <span class="metric-subtext">Baseado nos materiais planejados</span>
+            </div>
+          </div>
+
+          <!-- Card B: Custo Real -->
+          <div class="metric-card bg-violet">
+            <div class="metric-header">
+              <span class="metric-title">Custo Real Consumido</span>
+              <div class="metric-icon-wrapper bg-light-violet">
+                <i data-lucide="zap" class="icon-violet"></i>
+              </div>
+            </div>
+            <div class="metric-value" id="report-cost-real">R$ 0,00</div>
+            <div class="metric-footer">
+              <span class="metric-subtext">Baseado no material de fato usado</span>
+            </div>
+          </div>
+
+          <!-- Card C: Desvio Orçamentário -->
+          <div class="metric-card" id="report-cost-deviation-card">
+            <div class="metric-header">
+              <span class="metric-title" id="report-cost-deviation-title">Divergência</span>
+              <div class="metric-icon-wrapper" id="report-cost-deviation-icon-wrapper">
+                <i data-lucide="arrow-up-right" id="report-cost-deviation-icon"></i>
+              </div>
+            </div>
+            <div class="metric-value" id="report-cost-deviation">R$ 0,00</div>
+            <div class="metric-footer">
+              <span class="metric-subtext" id="report-cost-deviation-footer">Planejado - Real</span>
+            </div>
+          </div>
+
+          <!-- Card D: Custo por Metro de Fibra -->
+          <div class="metric-card bg-cyan" id="report-fiber-cost-card">
+            <div class="metric-header">
+              <span class="metric-title">Custo por Metro de Fibra</span>
+              <div class="metric-icon-wrapper bg-light-cyan">
+                <i data-lucide="git-commit" class="icon-cyan"></i>
+              </div>
+            </div>
+            <div class="metric-value" id="report-fiber-cost">R$ 0,00 / m</div>
+            <div class="metric-footer">
+              <span class="metric-subtext">Apenas cabos utilizados</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dynamic Audit Report Table Card -->
+        <div class="details-panel" id="report-details-panel" style="display: none;">
+          <div class="panel-header">
+            <h2 class="panel-title flex-align">
+              <i data-lucide="file-spreadsheet" class="icon-indigo"></i>
+              Relatório de Auditoria de Materiais
+            </h2>
+          </div>
+          <div class="planning-table-scroll-wrapper">
+            <table class="planning-table" id="audit-table">
+              <thead>
+                <tr>
+                  <th>Material</th>
+                  <th>Qtd. Planejada</th>
+                  <th>Qtd. Entregue</th>
+                  <th>Qtd. Usada</th>
+                  <th>Qtd. Devolvida</th>
+                  <th>Diferença (Plan - Usado)</th>
+                  <th style="font-weight: 700;">Saldo em Campo</th>
+                  <th>Valor Gasto (Real)</th>
+                </tr>
+              </thead>
+              <tbody id="audit-tbody">
+                <!-- Rendered via JS -->
+              </tbody>
+              <tfoot id="audit-tfoot">
+                <!-- Sum rows rendered via JS -->
+              </tfoot>
+            </table>
+          </div>
+        </div>
+
+        <!-- Initial Placeholder State for reports -->
+        <div class="empty-state" id="report-empty-state">
+          <i data-lucide="bar-chart-2" class="icon-large"></i>
+          <h3>Selecione um Lançamento</h3>
+          <p>Escolha uma obra no seletor acima para visualizar as métricas de auditoria financeira, desvios e estoques de campo.</p>
+        </div>
+      </section>
+
+      <!-- SEÇÃO: EQUIPES -->
+      <section id="equipes-section" class="app-section">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px;">
+          <!-- Card Formulario: Nova Equipe -->
+          <div class="details-panel" style="max-height: fit-content;">
+            <div class="panel-header">
+              <h2 class="panel-title flex-align">
+                <i data-lucide="users" class="icon-indigo"></i>
+                <span id="team-form-title">Cadastrar Nova Equipe</span>
+              </h2>
+            </div>
+            <form id="team-form" novalidate style="padding: 20px;">
+              <input type="hidden" id="edit-team-id" value="" />
+              
+              <div class="form-group">
+                <label for="team-name">Nome da Equipe <span class="required">*</span></label>
+                <input type="text" id="team-name" placeholder="Ex: Equipe Alfa, Equipe Fibra Oeste" required style="width: 100%; box-sizing: border-box;" />
+                <span class="error-message" id="error-team-name">O nome da equipe é obrigatório.</span>
+              </div>
+              
+              <div class="form-group" style="margin-top: 16px;">
+                <label for="team-responsible">Responsável pela Equipe <span class="required">*</span></label>
+                <input type="text" id="team-responsible" placeholder="Ex: Carlos Eduardo, Anderson Silva" required style="width: 100%; box-sizing: border-box;" />
+                <span class="error-message" id="error-team-responsible">O responsável da equipe é obrigatório.</span>
+              </div>
+              
+              <div style="display: flex; gap: 12px; margin-top: 28px;">
+                <button type="submit" class="btn btn-primary" style="flex-grow: 1;">
+                  <i data-lucide="check"></i>
+                  <span id="btn-team-submit-text">Cadastrar Equipe</span>
+                </button>
+                <button type="button" class="btn btn-tertiary" id="btn-cancel-team" style="display: none; flex-grow: 0;">
+                  <span>Cancelar</span>
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Card Listagem: Equipes Cadastradas -->
+          <div class="details-panel">
+            <div class="panel-header">
+              <h2 class="panel-title flex-align">
+                <i data-lucide="list" class="icon-indigo"></i>
+                Equipes Cadastradas
+              </h2>
+            </div>
+            <div class="planning-table-scroll-wrapper" style="padding: 12px;">
+              <table class="planning-table" id="teams-table">
+                <thead>
+                  <tr>
+                    <th>Nome da Equipe</th>
+                    <th>Responsável</th>
+                    <th style="text-align: right; width: 120px;">Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="teams-tbody">
+                  <!-- Rendered via JS -->
+                </tbody>
+              </table>
+              <div class="empty-state" id="teams-empty-state" style="margin-top: 20px;">
+                <i data-lucide="users" class="icon-large"></i>
+                <h3>Nenhuma equipe cadastrada</h3>
+                <p>Use o formulário ao lado para cadastrar equipes de campo.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SEÇÃO 6: CONFIGURAÇÕES (Supabase Sync settings) -->
+      <section id="configuracoes-section" class="app-section">
+        <div class="details-panel" style="max-width: 650px; margin: 40px auto;">
+          <div class="panel-header">
+            <h2 class="panel-title flex-align">
+              <i data-lucide="settings" class="icon-indigo"></i>
+              Configuração do Supabase Cloud Sync
+            </h2>
+          </div>
+          
+          <div style="padding: 24px;">
+            <!-- Connection Status Card -->
+            <div id="db-status-card" class="alert-item warning-alert" style="margin-bottom: 24px; padding: 20px; border-radius: 16px; display: flex; align-items: center; gap: 16px; border: 1px solid rgba(24, 26, 26, 0.05); box-shadow: var(--shadow-sm);">
+              <div id="db-status-icon-box" style="width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background-color: rgba(255, 196, 109, 0.15);">
+                <i data-lucide="database" id="db-status-icon" style="width: 24px; height: 24px; color: #D4ED1A;"></i>
+              </div>
+              <div style="flex-grow: 1;">
+                <h4 id="db-status-title" style="font-weight: 700; font-size: 14px; margin-bottom: 2px; color: var(--text-primary);">Conexão Local-First (Offline)</h4>
+                <p id="db-status-desc" style="font-size: 12px; color: var(--text-secondary); line-height: 1.5;">Os dados estão sendo salvos apenas no navegador. Configure as credenciais abaixo para ativar a persistência em tempo real no Supabase.</p>
+              </div>
+              <span id="db-status-badge" class="badge badge-amber">LocalStorage</span>
+            </div>
+
+            <form id="supabase-config-form" novalidate>
+              <div class="form-group">
+                <label for="config-supabase-url">URL da API do Supabase (REST Endpoint) <span class="required">*</span></label>
+                <input type="url" id="config-supabase-url" placeholder="https://xxxxxxxxxxxxxxxxxxxx.supabase.co" required />
+                <span class="error-message" id="error-config-supabase-url">Informe uma URL do Supabase válida.</span>
+                <span class="text-secondary" style="font-size: 11px; margin-top: 4px; display: block;">Obtenha em: Settings -> API -> Project URL</span>
+              </div>
+
+              <div class="form-group" style="margin-top: 16px;">
+                <label for="config-supabase-key">Chave Pública Anon (public anon key) <span class="required">*</span></label>
+                <input type="text" id="config-supabase-key" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ii..." required />
+                <span class="error-message" id="error-config-supabase-key">A chave anon do Supabase é obrigatória.</span>
+                <span class="text-secondary" style="font-size: 11px; margin-top: 4px; display: block;">Obtenha em: Settings -> API -> Project API keys (anon public)</span>
+              </div>
+
+              <div style="display: flex; gap: 12px; margin-top: 28px;">
+                <button type="submit" class="btn btn-primary" style="flex-grow: 1;">
+                  <i data-lucide="check"></i>
+                  <span>Salvar e Conectar</span>
+                </button>
+                <button type="button" class="btn btn-tertiary" id="btn-clear-supabase-config" style="flex-grow: 0;">
+                  <i data-lucide="trash-2"></i>
+                  <span>Limpar</span>
+                </button>
+              </div>
+            </form>
+
+            <!-- Painel de Gerenciamento de Usuários -->
+            <div class="panel-header" style="margin-top: 36px; border-top: 1px solid var(--border-color); padding-top: 24px;">
+              <h2 class="panel-title flex-align" style="color: var(--text-primary);">
+                <i data-lucide="users" class="icon-indigo"></i>
+                Gerenciamento de Usuários
+              </h2>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 16px;">
+              <!-- Coluna 1: Formulário de Cadastro -->
+              <div style="padding: 20px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 16px;">
+                <h4 style="font-weight: 700; font-size: 14px; margin-bottom: 12px; color: var(--text-primary);">Cadastrar Novo Usuário</h4>
+                <form id="register-user-form" novalidate>
+                  <div class="form-group">
+                    <label for="reg-name">Nome Completo <span class="required">*</span></label>
+                    <input type="text" id="reg-name" placeholder="Ex: Lucas Almeida" required style="width: 100%; box-sizing: border-box;" />
+                    <span class="error-message" id="error-reg-name">O nome completo é obrigatório.</span>
+                  </div>
+                  
+                  <div class="form-group" style="margin-top: 12px;">
+                    <label for="reg-username">Usuário <span class="required">*</span></label>
+                    <input type="text" id="reg-username" placeholder="Ex: lucas" required style="width: 100%; box-sizing: border-box;" />
+                    <span class="error-message" id="error-reg-username">O nome de usuário é obrigatório.</span>
+                  </div>
+                  
+                  <div class="form-group" style="margin-top: 12px;">
+                    <label for="reg-password">Senha <span class="required">*</span></label>
+                    <input type="password" id="reg-password" placeholder="Ex: senha123" required style="width: 100%; box-sizing: border-box;" />
+                    <span class="error-message" id="error-reg-password">A senha é obrigatória.</span>
+                  </div>
+                  
+                  <button type="submit" class="btn btn-primary" style="margin-top: 20px; width: 100%; justify-content: center;">
+                    <i data-lucide="user-plus"></i>
+                    <span>Cadastrar Usuário</span>
+                  </button>
+                </form>
+              </div>
+              
+              <!-- Coluna 2: Lista de Usuários Ativos -->
+              <div style="padding: 20px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 16px; display: flex; flex-direction: column;">
+                <h4 style="font-weight: 700; font-size: 14px; margin-bottom: 12px; color: var(--text-primary);">Usuários Cadastrados</h4>
+                <div style="flex-grow: 1; overflow-y: auto; max-height: 280px;">
+                  <table class="data-table" style="font-size: 12px;">
+                    <thead>
+                      <tr>
+                        <th>Nome</th>
+                        <th>Usuário</th>
+                        <th style="width: 60px; text-align: center;">Excluir</th>
+                      </tr>
+                    </thead>
+                    <tbody id="users-table-body">
+                      <!-- Renderizado via JS -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- Painel de Limpeza de Dados -->
+            <div class="panel-header" style="margin-top: 32px; border-top: 1px solid var(--border-color); padding-top: 24px;">
+              <h2 class="panel-title flex-align" style="color: var(--text-primary);">
+                <i data-lucide="shield-alert" class="icon-amber" style="color: #D4ED1A;"></i>
+                Administração de Dados
+              </h2>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 16px; margin-top: 16px;">
+              <!-- Zerar Obras e Operações -->
+              <div style="padding: 20px; background: rgba(239, 68, 68, 0.03); border: 1px dashed rgba(239, 68, 68, 0.15); border-radius: 16px;">
+                <h4 style="font-weight: 700; font-size: 13px; margin-bottom: 6px; color: #DC2626;">Zerar Obras, Consumos e Lançamentos</h4>
+                <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 16px;">Esta ação irá apagar permanentemente todos os lançamentos cadastrados, planejamentos de materiais, entregas, consumos e devoluções, tanto localmente quanto no Supabase (se conectado). O cadastro de materiais em estoque será mantido.</p>
+                <button type="button" class="btn" id="btn-reset-app-data" style="background-color: #DC2626; color: #fff; border: 0; padding: 10px 20px; font-weight: 700; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-family: 'Inter', sans-serif;">
+                  <i data-lucide="trash-2" style="width: 16px; height: 16px;"></i>
+                  Limpar Lançamentos e Consumos
+                </button>
+              </div>
+
+              <!-- Zerar Estoque de Materiais -->
+              <div style="padding: 20px; background: rgba(245, 158, 11, 0.03); border: 1px dashed rgba(245, 158, 11, 0.2); border-radius: 16px;">
+                <h4 style="font-weight: 700; font-size: 13px; margin-bottom: 6px; color: #D97706;">Zerar Estoque de Materiais</h4>
+                <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 16px;">Esta ação irá apagar permanentemente todos os materiais cadastrados no estoque físico. Para evitar erros de banco de dados, todas as obras e lançamentos também serão limpos.</p>
+                <button type="button" class="btn" id="btn-reset-stock-data" style="background-color: #D97706; color: #fff; border: 0; padding: 10px 20px; font-weight: 700; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-family: 'Inter', sans-serif;">
+                  <i data-lucide="package-x" style="width: 16px; height: 16px;"></i>
+                  Limpar Estoque e Materiais
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      </div><!-- /content-wrapper -->
+    </main>
+
+  </div>
+
+  <!-- ==================== MODALS ==================== -->
+
+  <!-- Modal 1: Adicionar/Editar Material -->
+  <div class="modal-overlay" id="material-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2 id="material-modal-title">Novo Material</h2>
+        <button class="btn-close-modal" id="btn-close-material-modal">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <form id="material-form" novalidate>
+        <input type="hidden" id="edit-material-id" value="" />
+        
+        <div class="form-group">
+          <label for="material-name">Nome do Material <span class="required">*</span></label>
+          <input type="text" id="material-name" placeholder="Ex: Cabo Drop Flat AS80 1KM" required />
+          <span class="error-message" id="error-material-name">O nome é obrigatório (mínimo 3 caracteres).</span>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group col-6">
+            <label for="material-category">Categoria <span class="required">*</span></label>
+            <select id="material-category" required>
+              <option value="">Selecione...</option>
+              <option value="cabos">Cabo de Fibra</option>
+              <option value="conectores">Conectores / Splitters</option>
+              <option value="ferragens">Ferragens de Fixação</option>
+              <option value="equipamentos">Equipamentos / Ativos</option>
+              <option value="outros">Outros</option>
+            </select>
+            <span class="error-message" id="error-material-category">Selecione uma categoria.</span>
+          </div>
+
+          <div class="form-group col-6">
+            <label for="material-unit">Unidade de Medida <span class="required">*</span></label>
+            <select id="material-unit" required>
+              <option value="">Selecione...</option>
+              <option value="metro">Metro</option>
+              <option value="unidade">Unidade</option>
+              <option value="caixa">Caixa</option>
+              <option value="rolo">Rolo</option>
+            </select>
+            <span class="error-message" id="error-material-unit">Selecione a unidade.</span>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group col-4">
+            <label for="material-qty">Qtd. em Estoque <span class="required">*</span></label>
+            <input type="number" id="material-qty" placeholder="0" min="0" step="any" required />
+            <span class="error-message" id="error-material-qty">Deve ser maior ou igual a 0.</span>
+          </div>
+
+          <div class="form-group col-4">
+            <label for="material-price">Valor Unitário <span class="required">*</span></label>
+            <div class="input-prefix-wrapper">
+              <span class="input-prefix">R$</span>
+              <input type="number" id="material-price" placeholder="0.00" min="0.01" step="0.01" required />
+            </div>
+            <span class="error-message" id="error-material-price">Deve ser maior que 0.</span>
+          </div>
+
+          <div class="form-group col-4">
+            <label for="material-min">Estoque Mínimo <span class="required">*</span></label>
+            <input type="number" id="material-min" placeholder="0" min="0" step="any" required />
+            <span class="error-message" id="error-material-min">Deve ser maior ou igual a 0.</span>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-tertiary" id="btn-cancel-material-modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="btn-save-material">
+            <i data-lucide="check"></i>
+            <span>Salvar Material</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal 2: Registrar/Editar Lançamento (Expandido) -->
+  <div class="modal-overlay" id="deployment-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2 id="deployment-modal-title">Novo Lançamento</h2>
+        <button class="btn-close-modal" id="btn-close-deployment-modal">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <form id="deployment-form" novalidate>
+        <input type="hidden" id="edit-deployment-id" value="" />
+        
+        <div class="form-group">
+          <label for="deployment-name">Cidade ou Bairro <span class="required">*</span></label>
+          <input type="text" id="deployment-name" placeholder="Ex: Bairro Centro ou Cidade Petrolina" required />
+          <span class="error-message" id="error-deployment-name">A localização é obrigatória (mínimo 3 caracteres).</span>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group col-6">
+            <label for="deployment-city">Cidade <span class="required">*</span></label>
+            <input type="text" id="deployment-city" placeholder="Ex: Petrolina" required />
+            <span class="error-message" id="error-deployment-city">A cidade é obrigatória.</span>
+          </div>
+          <div class="form-group col-6">
+            <label for="deployment-address">Endereço / Localização (Google Maps)</label>
+            <input type="text" id="deployment-address" placeholder="Ex: Av. Souza Filho, 100, Petrolina" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group col-6">
+            <label for="deployment-status">Status <span class="required">*</span></label>
+            <select id="deployment-status" required>
+              <option value="">Selecione...</option>
+              <option value="planejamento">Planejamento</option>
+              <option value="em_andamento">Em Andamento</option>
+              <option value="finalizado">Finalizado</option>
+            </select>
+            <span class="error-message" id="error-deployment-status">Selecione o status do lançamento.</span>
+          </div>
+
+          <div class="form-group col-6">
+            <label for="deployment-responsible">Equipe Responsável <span class="required">*</span></label>
+            <select id="deployment-responsible" required>
+              <option value="">Selecione a equipe...</option>
+            </select>
+            <span class="error-message" id="error-deployment-responsible">Selecione uma equipe responsável.</span>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group col-6">
+            <label for="deployment-start-date">Data de Início <span class="required">*</span></label>
+            <input type="date" id="deployment-start-date" required />
+            <span class="error-message" id="error-deployment-start-date">Insira uma data de início válida.</span>
+          </div>
+
+          <div class="form-group col-6">
+            <label for="deployment-end-date">Data Prevista de Conclusão <span class="required">*</span></label>
+            <input type="date" id="deployment-end-date" required />
+            <span class="error-message" id="error-deployment-end-date">Insira a data prevista de conclusão.</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="deployment-notes">Observações</label>
+          <input type="text" id="deployment-notes" placeholder="Ex: Utilizar posteamento do trecho oeste..." />
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-tertiary" id="btn-cancel-deployment-modal">Cancelar</button>
+          <button type="submit" class="btn btn-secondary" id="btn-save-deployment">
+            <i data-lucide="check"></i>
+            <span>Salvar Lançamento</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal 3: Planejamento de Materiais do Lançamento [NOVO] -->
+  <div class="modal-overlay" id="planning-modal">
+    <div class="modal-card modal-large">
+      <div class="modal-header">
+        <div>
+          <h2 id="planning-modal-title">Planejar Materiais</h2>
+          <p id="planning-modal-subtitle" class="text-secondary" style="font-size: 12px; margin-top: 2px;">Adicione materiais do estoque a esta obra.</p>
+        </div>
+        <button class="btn-close-modal" id="btn-close-planning-modal">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      
+      <!-- Hidden field for current deployment -->
+      <input type="hidden" id="planning-deployment-id" value="" />
+
+      <!-- Tabs -->
+      <div class="planning-tabs" style="display: flex; gap: 0; border-bottom: 2px solid var(--border-color); margin-bottom: 20px;">
+        <button type="button" class="planning-tab active" id="tab-material" onclick="appView.switchPlanningTab('material')" style="display: flex; align-items: center; gap: 8px; padding: 10px 20px; background: none; border: none; border-bottom: 2px solid var(--color-primary); margin-bottom: -2px; color: var(--color-primary); font-weight: 700; font-size: 13px; cursor: pointer; transition: all 0.2s;">
+          <i data-lucide="package" style="width:15px;height:15px;"></i>
+          Material do Estoque
+        </button>
+        <button type="button" class="planning-tab" id="tab-labor" onclick="appView.switchPlanningTab('labor')" style="display: flex; align-items: center; gap: 8px; padding: 10px 20px; background: none; border: none; border-bottom: 2px solid transparent; margin-bottom: -2px; color: var(--text-secondary); font-weight: 600; font-size: 13px; cursor: pointer; transition: all 0.2s;">
+          <i data-lucide="hard-hat" style="width:15px;height:15px;"></i>
+          Mão de Obra
+        </button>
+      </div>
+
+      <!-- TAB 1: Material do Estoque -->
+      <div id="planning-panel-material">
+        <form id="planning-form" class="planning-input-form" novalidate>
+          <input type="hidden" id="edit-planned-item-id" value="" />
+          
+          <div class="planning-form-row">
+            <div class="form-group planning-field-select">
+              <label for="planning-material-id">Material do Estoque <span class="required">*</span></label>
+              <select id="planning-material-id" required>
+                <option value="">Selecione o material...</option>
+                <!-- Populated dynamically -->
+              </select>
+              <span class="error-message" id="error-planning-material-id">Selecione um material.</span>
+            </div>
+
+            <div class="form-group planning-field-qty">
+              <label for="planning-qty">Qtd. Planejada <span class="required">*</span></label>
+              <input type="number" id="planning-qty" placeholder="0" min="0.01" step="any" required />
+              <span class="error-message" id="error-planning-qty">Qtd. inválida.</span>
+            </div>
+
+            <div class="planning-field-actions">
+              <button type="submit" class="btn btn-secondary" id="btn-save-planning" style="height: 42px; margin-top: 23px;">
+                <i data-lucide="plus"></i>
+                <span id="btn-save-planning-text">Adicionar</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Real-time info & Alerts -->
+          <div id="planning-helper-text" class="helper-text-info" style="margin-top: 10px; margin-bottom: 0;"></div>
+          <div id="planning-alert-stock" class="planning-alert-danger" style="margin-top: 10px; display: none;">
+            <i data-lucide="alert-triangle"></i>
+            <span id="planning-alert-stock-text">Quantidade planejada supera o estoque disponível!</span>
+          </div>
+        </form>
+
+        <!-- Materials List -->
+        <div class="planning-table-container">
+          <h3>Materiais Planejados para esta Obra</h3>
+          <div class="planning-table-scroll-wrapper">
+            <table class="planning-table" id="planning-table">
+              <thead>
+                <tr>
+                  <th>Material</th>
+                  <th>Qtd. Planejada</th>
+                  <th>Estoque Físico</th>
+                  <th>Valor Unitário</th>
+                  <th>Custo Total</th>
+                  <th>Status Estoque</th>
+                  <th style="text-align: right;">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="planning-tbody">
+                <!-- Rendered via JS -->
+                <tr>
+                  <td colspan="7" class="text-center text-secondary" style="padding: 24px;">
+                    Nenhum material planejado ainda. Escolha um material acima para planejar.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 2: Mão de Obra -->
+      <div id="planning-panel-labor" style="display: none;">
+        <form id="labor-form" class="planning-input-form" novalidate>
+          <input type="hidden" id="edit-labor-item-id" value="" />
+
+          <div class="planning-form-row" style="align-items: flex-end; flex-wrap: wrap; gap: 12px;">
+            <div class="form-group" style="flex: 2; min-width: 180px;">
+              <label for="labor-description">Descrição do Serviço <span class="required">*</span></label>
+              <input type="text" id="labor-description" placeholder="Ex: Lançamento de cabo, Fusão, Instalação..." required />
+              <span class="error-message" id="error-labor-description">Descrição obrigatória.</span>
+            </div>
+
+            <div class="form-group" style="flex: 1; min-width: 120px;">
+              <label for="labor-unit">Unidade <span class="required">*</span></label>
+              <select id="labor-unit" required>
+                <option value="">Selecione...</option>
+                <option value="hora">Hora</option>
+                <option value="diária">Diária</option>
+                <option value="metro">Metro</option>
+                <option value="ponto">Ponto</option>
+                <option value="serviço">Serviço</option>
+              </select>
+              <span class="error-message" id="error-labor-unit">Selecione a unidade.</span>
+            </div>
+
+            <div class="form-group" style="flex: 1; min-width: 100px;">
+              <label for="labor-qty">Quantidade <span class="required">*</span></label>
+              <input type="number" id="labor-qty" placeholder="0" min="0.01" step="any" required />
+              <span class="error-message" id="error-labor-qty">Qtd. inválida.</span>
+            </div>
+
+            <div class="form-group" style="flex: 1; min-width: 120px;">
+              <label for="labor-unit-value">Valor Unitário (R$) <span class="required">*</span></label>
+              <input type="number" id="labor-unit-value" placeholder="0,00" min="0.01" step="any" required />
+              <span class="error-message" id="error-labor-unit-value">Valor inválido.</span>
+            </div>
+
+            <div style="flex-shrink: 0; padding-bottom: 1px;">
+              <button type="submit" class="btn btn-secondary" id="btn-save-labor" style="height: 42px;">
+                <i data-lucide="plus"></i>
+                <span id="btn-save-labor-text">Adicionar</span>
+              </button>
+            </div>
+          </div>
+        </form>
+
+        <!-- Labor List -->
+        <div class="planning-table-container">
+          <h3 style="display:flex; align-items:center; gap:8px;">
+            <i data-lucide="hard-hat" style="width:16px;height:16px;color:var(--color-primary);"></i>
+            Mão de Obra Planejada para esta Obra
+          </h3>
+          <div class="planning-table-scroll-wrapper">
+            <table class="planning-table" id="labor-table">
+              <thead>
+                <tr>
+                  <th>Descrição do Serviço</th>
+                  <th>Unidade</th>
+                  <th>Quantidade</th>
+                  <th>Valor Unitário</th>
+                  <th>Custo Total</th>
+                  <th style="text-align: right;">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="labor-tbody">
+                <!-- Rendered via JS -->
+                <tr>
+                  <td colspan="6" class="text-center text-secondary" style="padding: 24px;">
+                    Nenhuma mão de obra planejada ainda.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Planning Total Cost Footer -->
+      <div class="planning-modal-footer">
+        <div class="planning-total-cost-box">
+          <span class="text-secondary" style="font-size: 12px; font-weight: 500; text-transform: uppercase;">Custo Total Planejado</span>
+          <div id="planning-total-cost-value">R$ 0,00</div>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px; font-size:11px; color:var(--text-secondary);">
+          <span>Materiais: <strong id="planning-cost-materials">R$ 0,00</strong></span>
+          <span style="opacity:0.4;">|</span>
+          <span>Mão de Obra: <strong id="planning-cost-labor">R$ 0,00</strong></span>
+        </div>
+        <button type="button" class="btn btn-tertiary" id="btn-close-planning-modal-footer">Fechar Painel</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Modal 4: Editar Entrega -->
+  <div class="modal-overlay" id="delivery-edit-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2>Editar Registro de Entrega</h2>
+        <button class="btn-close-modal" id="btn-close-delivery-edit-modal">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <form id="delivery-edit-form" novalidate>
+        <input type="hidden" id="edit-delivery-id" value="" />
+        
+        <div class="form-group">
+          <label for="edit-delivery-deployment-text">Lançamento / Obra</label>
+          <input type="text" id="edit-delivery-deployment-text" readonly disabled style="opacity:0.7; background-color:var(--bg-tertiary);" />
+        </div>
+        
+        <div class="form-group">
+          <label for="edit-delivery-team">Equipe / Lançador <span class="required">*</span></label>
+          <select id="edit-delivery-team" required>
+            <option value="">Selecione a equipe...</option>
+          </select>
+          <span class="error-message" id="error-edit-delivery-team">Selecione a equipe.</span>
+        </div>
+
+        <div class="form-group">
+          <label for="edit-delivery-material-text">Material</label>
+          <input type="text" id="edit-delivery-material-text" readonly disabled style="opacity:0.7; background-color:var(--bg-tertiary);" />
+        </div>
+
+        <div class="form-row">
+          <div class="form-group col-6">
+            <label for="edit-delivery-qty">Qtd. Entregue <span class="required">*</span></label>
+            <input type="number" id="edit-delivery-qty" min="0.01" step="any" required />
+            <span class="error-message" id="error-edit-delivery-qty">Quantidade inválida.</span>
+            <span id="edit-delivery-stock-helper" class="text-secondary" style="font-size: 11px; margin-top: 4px;"></span>
+          </div>
+
+          <div class="form-group col-6">
+            <label for="edit-delivery-date">Data da Entrega <span class="required">*</span></label>
+            <input type="date" id="edit-delivery-date" required />
+            <span class="error-message" id="error-edit-delivery-date">Informe a data.</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="edit-delivery-notes">Observações</label>
+          <input type="text" id="edit-delivery-notes" />
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-tertiary" id="btn-cancel-delivery-edit-modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">
+            <i data-lucide="check"></i>
+            <span>Salvar Alterações</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal 5: Gerenciar Categorias -->
+  <div class="modal-overlay" id="categories-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2>Gerenciar Categorias</h2>
+        <button class="btn-close-modal" id="btn-close-categories-modal">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <div class="modal-body" style="max-height: 500px; overflow-y: auto;">
+        <div class="form-group" style="margin-bottom: 24px;">
+          <label for="new-category-name">Nova Categoria</label>
+          <div style="display: flex; gap: 8px; margin-top: 8px;">
+            <input type="text" id="new-category-name" placeholder="Ex: Cabos Especiais" style="flex: 1;" />
+            <button type="button" class="btn btn-primary" id="btn-add-category">
+              <i data-lucide="plus"></i>
+              <span>Adicionar</span>
+            </button>
+          </div>
+        </div>
+
+        <div id="categories-list" style="display: flex; flex-direction: column; gap: 8px;">
+          <!-- Renderizado via JS -->
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" id="btn-close-categories-modal-footer">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 6: Gerenciar Unidades de Medida -->
+  <div class="modal-overlay" id="units-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2>Gerenciar Unidades de Medida</h2>
+        <button class="btn-close-modal" id="btn-close-units-modal">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <div class="modal-body" style="max-height: 500px; overflow-y: auto;">
+        <div class="form-group" style="margin-bottom: 24px;">
+          <label for="new-unit-name">Nova Unidade</label>
+          <div style="display: flex; gap: 8px; margin-top: 8px;">
+            <input type="text" id="new-unit-name" placeholder="Ex: Bobina" style="flex: 1;" />
+            <button type="button" class="btn btn-primary" id="btn-add-unit">
+              <i data-lucide="plus"></i>
+              <span>Adicionar</span>
+            </button>
+          </div>
+        </div>
+
+        <div id="units-list" style="display: flex; flex-direction: column; gap: 8px;">
+          <!-- Renderizado via JS -->
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" id="btn-close-units-modal-footer">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== TOAST NOTIFICATIONS ==================== -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- Supabase CDN Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- JavaScript Bundle File -->
+  <script src="app.js"></script>
+</body>
+</html>
+

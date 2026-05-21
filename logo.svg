@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Pétala superior-esquerda: Cyan -->
+  <path d="M50 10 L30 22 L28 42 L46 34 Z" fill="#3FCCDD" opacity="0.95"/>
+  <!-- Pétala superior-direita: Azul -->
+  <path d="M50 10 L70 22 L72 42 L54 34 Z" fill="#0047CC" opacity="0.95"/>
+  <!-- Pétala direita: Cyan -->
+  <path d="M72 42 L88 55 L78 72 L62 60 Z" fill="#3FCCDD" opacity="0.95"/>
+  <!-- Pétala inferior-direita: Azul -->
+  <path d="M78 72 L68 90 L50 88 L54 68 Z" fill="#0047CC" opacity="0.95"/>
+  <!-- Pétala inferior-esquerda: Cyan -->
+  <path d="M50 88 L32 90 L22 72 L40 68 Z" fill="#3FCCDD" opacity="0.95"/>
+  <!-- Pétala esquerda: Azul -->
+  <path d="M22 72 L12 55 L28 42 L38 60 Z" fill="#0047CC" opacity="0.95"/>
+</svg>
