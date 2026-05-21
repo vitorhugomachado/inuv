@@ -1,13 +1,3 @@
 {
-  "version": 2,
-  "cleanUrls": true,
-  "routes": [
-    { "src": "/sw.js", "dest": "/sw.js" },
-    { "src": "/logo.png", "dest": "/logo.png" },
-    { "src": "/logo.svg", "dest": "/logo.svg" },
-    { "src": "/truck_hero.png", "dest": "/truck_hero.png" },
-    { "src": "/index.css", "dest": "/index.css" },
-    { "src": "/app.js", "dest": "/app.js" },
-    { "src": "/(.*)", "dest": "/index.html" }
-  ]
+  "cleanUrls": true
 }
