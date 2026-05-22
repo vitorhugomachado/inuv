@@ -2000,10 +2000,14 @@ class AppView {
 
     const transitVal = Math.max(0, deliveredVal - returnedVal - consumedVal);
 
-    // 3. Extra Expenses
+    // 3. Labor Value (Planejado em serviços)
+    const deploymentsList = store.getDeployments() || [];
+    const laborVal = deploymentsList.reduce((sum, d) => sum + store.getLaborTotalCost(d), 0);
+
+    // 4. Extra Expenses
     const extraExpensesVal = expenses.reduce((sum, e) => sum + e.value, 0);
 
-    // 4. Grand Total Cost = Consumido + Despesas Extras
+    // 5. Grand Total Cost = Consumido + Despesas Extras
     const totalCostVal = consumedVal + extraExpensesVal;
 
     // Inject into DOM safely
@@ -2014,6 +2018,10 @@ class AppView {
     const costTransitEl = document.getElementById('cost-transit-val');
     if (costTransitEl) {
       costTransitEl.textContent = `R$ ${transitVal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+    const costLaborEl = document.getElementById('cost-labor-val');
+    if (costLaborEl) {
+      costLaborEl.textContent = `R$ ${laborVal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     }
     const costConsumedEl = document.getElementById('cost-consumed-val');
     if (costConsumedEl) {
