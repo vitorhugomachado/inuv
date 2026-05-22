@@ -86,9 +86,9 @@
           <i data-lucide="package"></i>
           <span>Estoque</span>
         </a>
-        <a href="#lancamentos" class="nav-link" data-target="lancamentos" data-label="Lançamentos">
+        <a href="#lancamentos" class="nav-link" data-target="lancamentos" data-label="Planejamento">
           <i data-lucide="cable"></i>
-          <span>Lançamentos</span>
+          <span>Planejamento</span>
         </a>
         <a href="#entregas" class="nav-link" data-target="entregas" data-label="Entregas">
           <i data-lucide="truck"></i>
@@ -98,14 +98,12 @@
           <i data-lucide="flame"></i>
           <span>Consumo</span>
         </a>
-        <a href="#relatorios" class="nav-link" data-target="relatorios" data-label="Relatórios">
-          <i data-lucide="bar-chart-2"></i>
-          <span>Relatórios</span>
-        </a>
+
         <a href="#custos" class="nav-link" data-target="custos" data-label="Central de Custos">
           <i data-lucide="dollar-sign"></i>
           <span>Central de Custos</span>
         </a>
+
         <a href="#equipes" class="nav-link" data-target="equipes" data-label="Equipes">
           <i data-lucide="users"></i>
           <span>Equipes</span>
@@ -155,222 +153,280 @@
               <!-- Rendered dynamically -->
             </select>
           </div>
-          <i data-lucide="chevron-down" style="position: absolute; right: 14px; pointer-events: none; width: 14px; height: 14px; opacity: 0.7; color: var(--text-secondary);"></i>
         </div>
-
-        </div>
-
       </header>
 
-      <!-- SEÇÃO 1: DASHBOARD (INUV FIBRAS Dribbble/Behance Style) -->
-      <section id="dashboard-section" class="app-section active">
-        
-        <!-- Hero Layout Container -->
-        <div class="dashboard-hero-container">
+      <!-- SEÇÃO 1: DASHBOARD (INUV FIBRAS Ultra Modern SaaS) -->
+      <section id="dashboard-section" class="app-section active" style="padding: 0; height: calc(100vh - 80px);">
+        <div class="modern-dashboard-layout">
           
-          <!-- Coluna 1: Lançamento em Destaque & Performance -->
-          <div class="hero-left-column">
-            <!-- Card Lançamento Destaque -->
-            <div class="highlight-card" id="dashboard-highlight-card">
-              <div class="highlight-card-header">
-                <span class="highlight-id">#A-BB84610</span>
-                <span class="badge badge-green">Em Andamento</span>
+          <!-- LADO ESQUERDO: CARD DE ANDAMENTO -->
+          <div class="dash-status-card">
+            
+            <div class="dash-card-header">
+              <div class="dash-icon-box">
+                <i data-lucide="route"></i>
               </div>
-              <div class="highlight-metrics">
-                <div class="metric-item">
-                  <span class="metric-num">2.96 km</span>
-                  <span class="metric-lbl">Distância</span>
+              <div class="dash-title-group">
+                <h2 id="dash-dep-name">Selecione uma obra</h2>
+                <span class="dash-badge" id="dash-dep-status">Aguardando</span>
+              </div>
+            </div>
+            
+            <div class="dash-progress-section">
+              <span class="dash-progress-label">PROGRESSO GERAL</span>
+              <div class="dash-progress-value" id="dash-dep-pct">0%</div>
+              <div class="dash-progress-bar-container">
+                <div class="dash-progress-bar-fill" id="dash-dep-bar" style="width: 0%;"></div>
+              </div>
+              <div class="dash-progress-est" id="dash-dep-est">Conclusão estimada: -- dias</div>
+            </div>
+            
+            <div class="dash-metrics-row">
+              <div class="dash-metric-item">
+                <i data-lucide="ruler"></i>
+                <span class="dash-metric-val" id="dash-dep-distance">0.00 km</span>
+                <span class="dash-metric-lbl">Metragem</span>
+              </div>
+              <div class="dash-metric-item">
+                <i data-lucide="calendar"></i>
+                <span class="dash-metric-val" id="dash-dep-duration">-- dias</span>
+                <span class="dash-metric-lbl">Prazo est.</span>
+              </div>
+              <div class="dash-metric-item">
+                <i data-lucide="dollar-sign"></i>
+                <span class="dash-metric-val" id="dash-dep-budget">R$ 0,00</span>
+                <span class="dash-metric-lbl">Orçamento</span>
+              </div>
+            </div>
+            
+            <div class="dash-info-list">
+              <div class="dash-info-item">
+                <div class="dash-info-icon"><i data-lucide="users"></i></div>
+                <div class="dash-info-text">
+                  <span class="dash-info-lbl">Responsável</span>
+                  <span class="dash-info-val" id="dash-dep-resp">Não atribuído</span>
                 </div>
-                <div class="metric-item">
-                  <span class="metric-num">4h 55 min</span>
-                  <span class="metric-lbl">Tempo</span>
+              </div>
+              <div class="dash-info-item">
+                <div class="dash-info-icon"><i data-lucide="map-pin"></i></div>
+                <div class="dash-info-text">
+                  <span class="dash-info-lbl">Local</span>
+                  <span class="dash-info-val" id="dash-dep-city">--</span>
                 </div>
-                <div class="metric-item">
-                  <span class="metric-num">9:43 AM</span>
-                  <span class="metric-lbl">Atualizado</span>
+              </div>
+            </div>
+            
+            <!-- BLOCO FINANCEIRO AZUL -->
+            <div class="dash-finance-block">
+              <div class="dash-finance-header">
+                <i data-lucide="trending-up"></i>
+                <span>Custo até o momento</span>
+              </div>
+              <div class="dash-finance-main">
+                <div class="dash-finance-val" id="dash-cost-real">R$ 0,00</div>
+                <div class="dash-finance-sub">CUSTO REAL CONSUMIDO</div>
+              </div>
+              
+              <div class="dash-finance-vs">
+                <span>vs. Planejado</span>
+                <span id="dash-cost-pct">0%</span>
+              </div>
+              
+              <div class="dash-finance-footer">
+                <div class="dash-finance-footer-item">
+                  <span class="lbl">Planejado</span>
+                  <span class="val" id="dash-cost-planned">R$ 0,00</span>
+                </div>
+                <div class="dash-finance-footer-item">
+                  <span class="lbl">Consumos</span>
+                  <span class="val" id="dash-cost-count">0 registros</span>
+                </div>
+              </div>
+            </div>
+            
+          </div>
+          
+          <!-- LADO DIREITO: MAPA INTERATIVO -->
+          <div class="dash-map-container">
+            <!-- Fundo estático de mapa base -->
+            <div class="dash-map-bg">
+              <!-- Ponto central ilustrativo do mapa -->
+              <div class="dash-map-marker">
+                <i data-lucide="map-pin"></i>
+                <span class="dash-map-marker-lbl" id="dash-map-marker-name">Centro</span>
+              </div>
+              
+              <!-- Badge Top-Left -->
+              <div class="dash-map-badge-active">
+                <i data-lucide="crosshair"></i>
+                <span>LOCALIZAÇÃO ATIVA</span>
+              </div>
+              
+              <!-- Zoom Controls -->
+              <div class="dash-map-controls">
+                <button><i data-lucide="crosshair"></i></button>
+                <button><i data-lucide="plus"></i></button>
+                <button><i data-lucide="minus"></i></button>
+              </div>
+              
+              <!-- Overlay Inferior Escuro (Glassmorphism) -->
+              <div class="dash-map-overlay">
+                <div class="dash-overlay-item">
+                  <div class="overlay-icon bg-blue-glow"><i data-lucide="git-merge"></i></div>
+                  <div class="overlay-text">
+                    <span class="overlay-lbl">TRECHO ATUAL</span>
+                    <span class="overlay-val" id="dash-overlay-route">--</span>
+                    <span class="overlay-sub" id="dash-overlay-city">--</span>
+                  </div>
+                </div>
+                <div class="dash-overlay-item">
+                  <div class="overlay-icon bg-indigo-glow"><i data-lucide="activity"></i></div>
+                  <div class="overlay-text">
+                    <span class="overlay-lbl">FASE ATUAL</span>
+                    <span class="overlay-val">Lançamento de Fibra</span>
+                    <span class="overlay-sub" id="dash-overlay-status">Aguardando</span>
+                  </div>
+                </div>
+                <div class="dash-overlay-item">
+                  <div class="overlay-icon bg-blue-glow"><i data-lucide="users"></i></div>
+                  <div class="overlay-text">
+                    <span class="overlay-lbl">EQUIPE ATIVA</span>
+                    <span class="overlay-val" id="dash-overlay-team">--</span>
+                    <span class="overlay-sub">1 equipe alocada</span>
+                  </div>
+                </div>
+                <div class="dash-overlay-item">
+                  <div class="overlay-icon bg-indigo-glow"><i data-lucide="calendar"></i></div>
+                  <div class="overlay-text">
+                    <span class="overlay-lbl">PRÓXIMA ETAPA</span>
+                    <span class="overlay-val">Emenda e Fusão</span>
+                    <span class="overlay-sub" id="dash-overlay-next">Aprox. -- km</span>
+                  </div>
                 </div>
               </div>
               
-              <!-- Gradient Slider/Progress -->
-              <div class="gradient-slider-container">
-                <div class="slider-track">
-                  <div class="slider-fill"></div>
-                  <div class="slider-thumb"></div>
-                </div>
-              </div>
-              
-              <div class="route-details">
-                <div class="route-point">
-                  <span class="point-dot dot-origin"></span>
-                  <span class="point-text">2450 E 12th St, Oakland</span>
-                </div>
-                <div class="route-point">
-                  <span class="point-dot dot-dest"></span>
-                  <span class="point-text">610 S Grand Ave, Los Angeles</span>
-                </div>
-              </div>
             </div>
-            
-            <!-- Card Custo Real do Lançamento -->
-            <div class="performance-widget" id="launch-cost-widget" style="position:relative; overflow:hidden;">
-              <!-- subtle gradient accent -->
-              <div style="position:absolute;top:0;right:0;width:80px;height:80px;background:radial-gradient(circle at top right,rgba(0, 71, 204,0.18),transparent 70%);pointer-events:none;"></div>
-              <div class="widget-header">
-                <span class="widget-title">Custo até o momento</span>
-                <span class="widget-subtitle" id="launch-cost-subtitle">Consumo real registrado</span>
-              </div>
-              <div class="widget-body" style="flex-direction:column; align-items:flex-start; gap:10px;">
-                <div style="display:flex; flex-direction:column;">
-                  <span id="launch-cost-value" style="font-size:22px; font-weight:800; color:var(--text-primary); line-height:1; letter-spacing:-0.5px;">R$ 0,00</span>
-                  <span style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--color-primary); margin-top:4px;">Custo Real Consumido</span>
-                </div>
-                <!-- Progress bar: real vs planejado -->
-                <div style="width:100%;">
-                  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
-                    <span style="font-size:10px; color:var(--text-secondary); font-weight:500;">vs. Planejado</span>
-                    <span id="launch-cost-pct" style="font-size:11px; font-weight:700; color:var(--color-primary);">0%</span>
-                  </div>
-                  <div style="height:6px; background:var(--border-color); border-radius:99px; overflow:hidden;">
-                    <div id="launch-cost-bar" style="height:100%; width:0%; background:linear-gradient(90deg,var(--color-primary),#0035A0); border-radius:99px; transition:width 0.6s ease;"></div>
-                  </div>
-                </div>
-                <!-- Linha de detalhe -->
-                <div style="display:flex; gap:12px; width:100%; border-top:1px solid var(--border-color); padding-top:8px; margin-top:2px;">
-                  <div style="display:flex; flex-direction:column;">
-                    <span style="font-size:10px; color:var(--text-secondary); font-weight:500;">Planejado</span>
-                    <span id="launch-cost-planned" style="font-size:12px; font-weight:700; color:var(--text-primary);">R$ 0,00</span>
-                  </div>
-                  <div style="display:flex; flex-direction:column;">
-                    <span style="font-size:10px; color:var(--text-secondary); font-weight:500;">Consumos</span>
-                    <span id="launch-cost-count" style="font-size:12px; font-weight:700; color:var(--text-primary);">0 registros</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-
           </div>
           
-          <!-- Coluna 2: Google Maps Card / Illustration Fallback -->
-          <div class="truck-hero-card" id="dashboard-map-card" style="overflow: hidden; padding: 0; min-height: 380px; position: relative;">
-            <img src="truck_hero.png" alt="Truck Hero Illustration" class="truck-hero-img">
-          </div>
-          
-          <!-- Coluna 3: Três Cards Premium (Materiais em Campo, Estoque Valorado, Circular Custo) -->
-          <div class="hero-right-column">
-            
-            <!-- Card 1: Materiais em campo (Green Sparkline style) -->
-            <div class="dribbble-metric-card metric-green">
-              <div class="card-sparkline-bg">
-                <svg viewBox="0 0 100 30" class="sparkline-svg">
-                  <path d="M0,25 Q15,20 30,22 T60,12 T90,5 T100,2" fill="none" stroke="rgba(161, 230, 136, 0.4)" stroke-width="2.5" stroke-linecap="round"></path>
-                </svg>
-              </div>
-              <div class="dribbble-metric-header">
-                <span class="dribbble-metric-title">Materiais em campo</span>
-                <div class="dribbble-metric-icon bg-green-light">
-                  <i data-lucide="truck" class="text-green"></i>
-                </div>
-              </div>
-              <div class="dribbble-metric-value" id="dash-total-field">0</div>
-              <div class="dribbble-metric-footer">
-                <span class="badge-pill-green">93.3% em uso</span>
-                <span class="footer-desc">Volume em obras ativas</span>
-              </div>
-            </div>
-            
-            <!-- Card 2: Receita da Rota / Estoque Valorado (Purple Sparkline style) -->
-            <div class="dribbble-metric-card metric-purple">
-              <div class="card-sparkline-bg">
-                <svg viewBox="0 0 100 30" class="sparkline-svg">
-                  <path d="M0,20 Q20,28 40,15 T70,12 T100,5" fill="none" stroke="rgba(0, 71, 204, 0.3)" stroke-width="2.5" stroke-linecap="round"></path>
-                </svg>
-              </div>
-              <div class="dribbble-metric-header">
-                <span class="dribbble-metric-title">Estoque Valorado</span>
-                <div class="dribbble-metric-icon bg-purple-light">
-                  <i data-lucide="dollar-sign" class="text-purple"></i>
-                </div>
-              </div>
-              <div class="dribbble-metric-value value-small" id="dash-stock-value">R$ 0,00 total valorado</div>
-              <div class="dribbble-metric-footer">
-                <span class="badge-pill-purple">1 Set - 8 Set</span>
-                <span class="footer-desc">Almoxarifado estimado</span>
-              </div>
-            </div>
-            
-            <!-- Card 3: Carga do motor / Custo Total circular gauge -->
-            <div class="dribbble-metric-card metric-gauge">
-              <div class="dribbble-metric-header">
-                <span class="dribbble-metric-title">Custo Total Planejado</span>
-                <div class="dribbble-metric-icon bg-orange-light">
-                  <i data-lucide="gauge" class="text-orange"></i>
-                </div>
-              </div>
-              <div class="gauge-content">
-                <div class="radial-gauge-container">
-                  <svg class="gauge-ring" viewBox="0 0 36 36">
-                    <path class="gauge-ring-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#E2E8F0" stroke-width="3"></path>
-                    <path class="gauge-ring-fill" stroke-dasharray="75, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#D4ED1A" stroke-width="3" stroke-linecap="round"></path>
-                  </svg>
-                  <div class="gauge-value-box">
-                    <span class="gauge-value-num" id="dash-total-cost">R$ 0,00</span>
-                    <span class="gauge-value-lbl">Custo Ativo</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-          </div>
         </div>
-        
-
-
       </section>
 
       <!-- SEÇÃO 2: ESTOQUE -->
       <section id="estoque-section" class="app-section">
-        <!-- Actions & Filter Bar -->
-        <div class="section-actions-bar">
-          <div class="search-filters-container">
-            <div class="search-wrapper">
-              <i data-lucide="search" class="search-icon"></i>
-              <input type="text" id="material-search" placeholder="Pesquisar por nome do material..." />
-            </div>
-            <div class="filter-wrapper">
-              <select id="material-category-filter">
-                <option value="todos">Todas as Categorias</option>
-                <option value="cabos">Cabo de Fibra</option>
-                <option value="conectores">Conectores / Splitters</option>
-                <option value="ferragens">Ferragens de Fixação</option>
-                <option value="equipamentos">Equipamentos / Ativos</option>
-                <option value="outros">Outros</option>
-              </select>
-            </div>
-          </div>
-          <div class="buttons-group" style="display: flex; gap: 8px;">
-            <button class="btn btn-secondary" id="btn-open-categories" title="Gerenciar Categorias">
+        <!-- HEADER ACTIONS -->
+        <div class="section-header" style="justify-content: flex-end; align-items: center; border-bottom: none; padding-bottom: 0;">
+          <div class="header-actions">
+            <button class="btn btn-outline" id="btn-open-categories">
               <i data-lucide="tags"></i>
               <span>Categorias</span>
             </button>
-            <button class="btn btn-secondary" id="btn-open-units" title="Gerenciar Unidades">
+            <button class="btn btn-outline" id="btn-open-units">
               <i data-lucide="ruler"></i>
               <span>Unidades</span>
             </button>
             <button class="btn btn-primary" id="btn-open-add-material">
               <i data-lucide="plus"></i>
-              <span>Adicionar Material</span>
+              <span>Novo Item</span>
             </button>
           </div>
         </div>
 
-        <!-- Materials Grid -->
-        <div class="materials-grid" id="materials-grid">
-          <!-- Rendered via JS -->
-          <div class="empty-state">
+        <!-- TOP CARDS -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 16px;">
+          <div class="metric-card finance-card-modern">
+            <div class="finance-card-header">
+              <span>Estoque Físico</span>
+              <i data-lucide="box" style="color: #3b82f6;"></i>
+            </div>
+            <h3 class="card-sm-value" id="inv-card-physical-val">R$ 0,00</h3>
+            <p class="finance-desc">Patrimônio físico guardado</p>
+          </div>
+          
+          <div class="metric-card finance-card-modern">
+            <div class="finance-card-header">
+              <span>Material em Trânsito</span>
+              <i data-lucide="truck" style="color: #eab308;"></i>
+            </div>
+            <h3 class="card-sm-value" id="inv-card-transit-val">R$ 0,00</h3>
+            <p class="finance-desc">Material físico em campo</p>
+          </div>
+
+          <div class="metric-card finance-card-modern">
+            <div class="finance-card-header">
+              <span>Total Consumido Físico</span>
+              <i data-lucide="droplet" style="color: #ef4444;"></i>
+            </div>
+            <h3 class="card-sm-value" id="inv-card-consumed-val">R$ 0,00</h3>
+            <p class="finance-desc">Materiais aplicados em obras</p>
+          </div>
+
+          <div class="metric-card finance-card-modern" style="background: rgba(139, 92, 246, 0.04); border-color: rgba(139, 92, 246, 0.2);">
+            <div class="finance-card-header">
+              <span>Consumo Operacional</span>
+              <i data-lucide="zap" style="color: #8b5cf6;"></i>
+            </div>
+            <h3 class="card-sm-value" id="inv-card-op-val">R$ 0,00</h3>
+            <p class="finance-desc">Alimentação, combustível, etc</p>
+          </div>
+
+          <div class="metric-card finance-card-modern">
+            <div class="finance-card-header">
+              <span>Itens Cadastrados</span>
+              <i data-lucide="layers" style="color: #10b981;"></i>
+            </div>
+            <h3 class="card-sm-value" id="inv-card-items-count">0</h3>
+            <p class="finance-desc">Físicos e Operacionais</p>
+          </div>
+
+          <div class="metric-card finance-card-modern">
+            <div class="finance-card-header">
+              <span style="color: #ef4444;">Estoque Baixo</span>
+              <i data-lucide="alert-triangle" style="color: #ef4444;"></i>
+            </div>
+            <h3 class="card-sm-value" id="inv-card-low-stock" style="color: #ef4444;">0</h3>
+            <p class="finance-desc">Itens precisam de reposição</p>
+          </div>
+        </div>
+
+        <!-- FILTER BAR -->
+        <div class="finance-filters">
+          <div class="input-with-icon" style="flex: 2; margin: 0;">
+            <i data-lucide="search" class="input-icon"></i>
+            <input type="text" id="inv-search" placeholder="Buscar item por nome ou código...">
+          </div>
+          <select id="inv-type-filter" style="flex: 1; margin: 0; border-radius: 8px;">
+            <option value="todos">Todos os Tipos</option>
+            <option value="material">Material Físico</option>
+            <option value="consumo">Consumo Operacional</option>
+          </select>
+          <select id="inv-category-filter" style="flex: 1; margin: 0; border-radius: 8px;">
+            <option value="todos">Todas Categorias</option>
+          </select>
+          <button class="btn btn-outline" id="btn-inv-clear-filters" style="border: none;">Limpar</button>
+        </div>
+
+        <!-- INVENTORY TABLE -->
+        <div class="table-responsive" style="background: #fff; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); border: 1px solid var(--border-color);">
+          <table class="finance-table">
+            <thead>
+              <tr>
+                <th style="width: 25%;">Item / Categoria</th>
+                <th style="width: 15%;">Tipo</th>
+                <th style="width: 15%; text-align: right;">Quantidade (Saldo)</th>
+                <th style="width: 15%; text-align: right;">Valor Unitário</th>
+                <th style="width: 15%; text-align: right;">Valor Total</th>
+                <th style="width: 15%; text-align: center;">Ações</th>
+              </tr>
+            </thead>
+            <tbody id="inventory-tbody">
+              <!-- Rendered via JS -->
+            </tbody>
+          </table>
+          <div class="empty-state" id="inventory-empty-state" style="display: none; padding: 40px;">
             <i data-lucide="package-open" class="icon-large"></i>
-            <h3>Nenhum material no estoque</h3>
-            <p>Cadastre materiais clicando no botão acima para iniciar o controle.</p>
+            <h3>Nenhum item cadastrado</h3>
+            <p>Cadastre materiais e serviços operacionais para iniciar o controle.</p>
           </div>
         </div>
       </section>
@@ -612,6 +668,7 @@
               </div>
             </form>
           </div>
+
         </div>
 
         <!-- Team Balances Panel -->
@@ -685,6 +742,29 @@
                   </tr>
                 </thead>
                 <tbody id="returns-tbody">
+                  <!-- Rendered via JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Labor Payments List -->
+          <div class="details-panel">
+            <div class="panel-header">
+              <h3 class="panel-title">Histórico de Pagamentos (M.O.)</h3>
+            </div>
+            <div class="planning-table-scroll-wrapper">
+              <table class="planning-table">
+                <thead>
+                  <tr>
+                    <th>Equipe</th>
+                    <th>Descrição</th>
+                    <th>Valor</th>
+                    <th>Data</th>
+                    <th style="text-align: right;">Ação</th>
+                  </tr>
+                </thead>
+                <tbody id="labor-payments-tbody">
                   <!-- Rendered via JS -->
                 </tbody>
               </table>
@@ -806,93 +886,194 @@
 
       <!-- SEÇÃO: CENTRAL DE CUSTOS -->
       <section id="custos-section" class="app-section">
-        <!-- Grid de Métricas Financeiras -->
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px;">
-          <!-- Card: Valor em Estoque -->
-          <div class="metric-card">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-              <span class="metric-label" style="font-size: 13px;">Valor em Estoque</span>
-              <div class="metric-icon-box" style="background: rgba(0, 71, 204, 0.1); color: var(--primary-color);">
-                <i data-lucide="package" style="width: 18px; height: 18px;"></i>
-              </div>
-            </div>
-            <h3 class="metric-value" id="cost-stock-val">R$ 0,00</h3>
-            <p style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;">Patrimônio físico no galpão</p>
-          </div>
-
-          <!-- Card: Valor em Trânsito -->
-          <div class="metric-card">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-              <span class="metric-label" style="font-size: 13px;">Valor em Trânsito</span>
-              <div class="metric-icon-box" style="background: rgba(212, 237, 26, 0.1); color: #b8cc14;">
-                <i data-lucide="truck" style="width: 18px; height: 18px;"></i>
-              </div>
-            </div>
-            <h3 class="metric-value" id="cost-transit-val">R$ 0,00</h3>
-            <p style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;">Em posse das equipes de campo</p>
-          </div>
-
-          <!-- Card: Valor de Mão de Obra -->
-          <div class="metric-card">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-              <span class="metric-label" style="font-size: 13px;">Valor de Mão de Obra</span>
-              <div class="metric-icon-box" style="background: rgba(139, 92, 246, 0.1); color: #8b5cf6;">
-                <i data-lucide="users" style="width: 18px; height: 18px;"></i>
-              </div>
-            </div>
-            <h3 class="metric-value" id="cost-labor-val">R$ 0,00</h3>
-            <p style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;">Total planejado em serviços</p>
-          </div>
-
-          <!-- Card: Valor Consumido -->
-          <div class="metric-card">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-              <span class="metric-label" style="font-size: 13px;">Valor Consumido</span>
-              <div class="metric-icon-box" style="background: rgba(63, 204, 221, 0.1); color: var(--secondary-color);">
-                <i data-lucide="flame" style="width: 18px; height: 18px;"></i>
-              </div>
-            </div>
-            <h3 class="metric-value" id="cost-consumed-val">R$ 0,00</h3>
-            <p style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;">Materiais aplicados em campo</p>
-          </div>
-
-          <!-- Card: Custos Operacionais Totais -->
-          <div class="metric-card" style="background: linear-gradient(135deg, rgba(0,71,204,0.05) 0%, rgba(63,204,221,0.05) 100%); border: 1px solid rgba(0,71,204,0.15);">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-              <span class="metric-label" style="font-size: 13px; font-weight: 700; color: var(--primary-color);">Custo Total Realizado</span>
-              <div class="metric-icon-box" style="background: var(--primary-color); color: #fff;">
-                <i data-lucide="trending-up" style="width: 18px; height: 18px;"></i>
-              </div>
-            </div>
-            <h3 class="metric-value" id="cost-total-val" style="color: var(--primary-color);">R$ 0,00</h3>
-            <p style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;">Consumo + Despesas Extras</p>
+        <!-- HEADER ACTIONS -->
+        <div class="section-header" style="justify-content: flex-end; border-bottom: none; padding-bottom: 0;">
+          <div class="header-actions">
+            <button class="btn btn-outline" id="btn-export-cost-report">
+              <i data-lucide="download"></i>
+              <span>Exportar Relatório</span>
+            </button>
+            <button class="btn btn-outline" id="btn-open-cost-planning">
+              <i data-lucide="folder-plus"></i>
+              <span>Novo Orçamento</span>
+            </button>
+            <button class="btn btn-primary" id="btn-open-cost-expense">
+              <i data-lucide="receipt"></i>
+              <span>Nova Despesa</span>
+            </button>
           </div>
         </div>
 
-        <!-- Seção Inferior: Tabela de Orçamento e Custos por Obra -->
-        <div class="details-panel">
-          <div class="panel-header" style="justify-content: space-between;">
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <i data-lucide="pie-chart" style="color: var(--primary-color);"></i>
-              <h3 style="font-size: 15px; font-weight: 700; margin: 0;">Orçamento e Custos por Obra</h3>
+        <!-- TOP CARDS -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 16px;">
+          <div class="metric-card finance-card-modern">
+            <div class="finance-card-header">
+              <span>Valor em Estoque</span>
+              <div class="metric-icon-box" style="background: rgba(0, 71, 204, 0.1); color: var(--primary-color);"><i data-lucide="package" style="width: 16px; height: 16px;"></i></div>
             </div>
-            <span class="badge badge-blue" style="font-size: 10px;">Consolidado</span>
+            <h3 class="metric-value" id="cost-stock-val">R$ 0,00</h3>
+            <p class="finance-desc">Patrimônio físico no galpão</p>
           </div>
-          <div style="overflow-x: auto; margin-top: 16px;">
-            <table class="data-table" style="font-size: 12px;">
+          <div class="metric-card finance-card-modern">
+            <div class="finance-card-header">
+              <span>Valor em Trânsito</span>
+              <div class="metric-icon-box" style="background: rgba(212, 237, 26, 0.1); color: #b8cc14;"><i data-lucide="truck" style="width: 16px; height: 16px;"></i></div>
+            </div>
+            <h3 class="metric-value" id="cost-transit-val">R$ 0,00</h3>
+            <p class="finance-desc">Materiais com as equipes</p>
+          </div>
+          <div class="metric-card finance-card-modern">
+            <div class="finance-card-header">
+              <span>Valor Consumido</span>
+              <div class="metric-icon-box" style="background: rgba(59, 130, 246, 0.1); color: #3b82f6;"><i data-lucide="flame" style="width: 16px; height: 16px;"></i></div>
+            </div>
+            <h3 class="metric-value" id="cost-consumed-val">R$ 0,00</h3>
+            <p class="finance-desc">Materiais já aplicados</p>
+          </div>
+          <div class="metric-card finance-card-modern">
+            <div class="finance-card-header">
+              <span>Mão de Obra Planejada</span>
+              <div class="metric-icon-box" style="background: rgba(139, 92, 246, 0.1); color: #8b5cf6;"><i data-lucide="users" style="width: 16px; height: 16px;"></i></div>
+            </div>
+            <h3 class="metric-value" id="cost-labor-val">R$ 0,00</h3>
+            <p class="finance-desc">Custo de execução estimado</p>
+          </div>
+          <div class="metric-card finance-card-modern">
+            <div class="finance-card-header">
+              <span>Despesas Extras</span>
+              <div class="metric-icon-box" style="background: rgba(245, 158, 11, 0.1); color: #f59e0b;"><i data-lucide="receipt" style="width: 16px; height: 16px;"></i></div>
+            </div>
+            <h3 class="metric-value" id="cost-expenses-val">R$ 0,00</h3>
+            <p class="finance-desc">Custos avulsos e indiretos</p>
+          </div>
+          <div class="metric-card finance-card-modern primary-card" style="background: var(--primary-color); border: none; box-shadow: 0 4px 15px rgba(0, 71, 204, 0.25);">
+            <div class="finance-card-header">
+              <span style="color: rgba(255,255,255,0.9);">Custo Total Realizado</span>
+              <div class="metric-icon-box" style="background: rgba(255,255,255,0.2); color: #fff;"><i data-lucide="trending-up" style="width: 16px; height: 16px;"></i></div>
+            </div>
+            <h3 class="metric-value" id="cost-total-val" style="color: #fff;">R$ 0,00</h3>
+            <p class="finance-desc" style="color: rgba(255,255,255,0.7);">Materiais + M.O. + Despesas</p>
+          </div>
+        </div>
+
+        <!-- SECONDARY CARDS -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; margin-bottom: 24px;">
+          <div class="finance-card-small">
+            <span class="card-sm-title">Obras em andamento</span>
+            <span class="card-sm-value" id="cost-active-deps">0</span>
+          </div>
+          <div class="finance-card-small">
+            <span class="card-sm-title">Acima do orçamento</span>
+            <span class="card-sm-value text-red" id="cost-over-budget">0</span>
+          </div>
+          <div class="finance-card-small">
+            <span class="card-sm-title">Custo médio por obra</span>
+            <span class="card-sm-value" id="cost-avg-dep">R$ 0,00</span>
+          </div>
+          <div class="finance-card-small">
+            <span class="card-sm-title">Saldo global disponível</span>
+            <span class="card-sm-value text-green" id="cost-global-balance">R$ 0,00</span>
+          </div>
+          <div class="finance-card-small">
+            <span class="card-sm-title">Total global orçado</span>
+            <span class="card-sm-value" id="cost-global-planned">R$ 0,00</span>
+          </div>
+          <div class="finance-card-small">
+            <span class="card-sm-title">Percentual executado</span>
+            <span class="card-sm-value" id="cost-global-pct">0%</span>
+          </div>
+        </div>
+
+        <!-- FILTER BAR -->
+        <div class="finance-filters">
+          <div class="input-with-icon" style="flex: 2; margin: 0;">
+            <i data-lucide="search" class="input-icon"></i>
+            <input type="text" id="cost-search" placeholder="Buscar obra...">
+          </div>
+          <select id="cost-deployment-filter" style="flex: 2; margin: 0; border-radius: 8px;">
+            <option value="todos">Todas as Obras (Lançamentos)</option>
+            <!-- Preenchido via JS -->
+          </select>
+          <select id="cost-status-filter" style="flex: 1; margin: 0; border-radius: 8px;">
+            <option value="todos">Todos os Status</option>
+            <option value="em_andamento">Em Andamento</option>
+            <option value="finalizado">Finalizados</option>
+            <option value="planejamento">Planejamento</option>
+          </select>
+          <select id="cost-responsible-filter" style="flex: 1; margin: 0; border-radius: 8px;">
+            <option value="todos">Todos Responsáveis</option>
+          </select>
+          <button class="btn btn-outline" id="btn-cost-clear-filters" style="border: none;">Limpar</button>
+        </div>
+
+        <!-- CHARTS SECTION -->
+        <div class="finance-charts-grid" style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px; margin-bottom: 24px;">
+          <div class="card" style="padding: 20px;">
+            <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 16px;">Custo por Obra (Realizado vs Planejado)</h3>
+            <div style="height: 250px; position: relative;">
+              <canvas id="costBarChart"></canvas>
+            </div>
+          </div>
+          <div class="card" style="padding: 20px;">
+            <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 16px;">Distribuição de Custos Realizados</h3>
+            <div style="height: 250px; position: relative;">
+              <canvas id="costDonutChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- TABLE SECTION -->
+        <div class="card" style="padding: 0; overflow: hidden; margin-bottom: 40px;">
+          <div class="panel-header" style="padding: 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="font-size: 15px; font-weight: 700; margin: 0;">Orçamento e Custos por Obra</h3>
+            <span class="badge badge-blue">Painel Operacional</span>
+          </div>
+          <div style="overflow-x: auto;">
+            <table class="data-table" style="font-size: 13px; min-width: 1000px;">
               <thead>
                 <tr>
                   <th>Obra / Lançamento</th>
-                  <th style="text-align: right;">Custo Materiais</th>
+                  <th style="text-align: right;">Limite Orçamento</th>
+                  <th style="text-align: right;">Materiais</th>
+                  <th style="text-align: right;">Mão de Obra</th>
                   <th style="text-align: right;">Despesas Extras</th>
                   <th style="text-align: right;">Custo Total</th>
-                  <th style="width: 100px; text-align: center;">Status</th>
+                  <th style="text-align: right;">Saldo</th>
+                  <th style="text-align: center; width: 120px;">Status</th>
+                  <th style="text-align: center; width: 100px;">Ações</th>
                 </tr>
               </thead>
               <tbody id="cost-deployment-table-body">
                 <!-- Renderizado via JS -->
               </tbody>
             </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- SEÇÃO: SERVIÇOS -->
+      <section id="servicos-section" class="app-section">
+        <div class="section-header">
+          <div class="header-content">
+            <div class="header-icon-box bg-purple-light">
+              <i data-lucide="briefcase" class="text-purple"></i>
+            </div>
+            <div>
+              <h2 class="section-title">Gerenciamento de Serviços</h2>
+              <p class="section-subtitle">Cadastre os serviços padrão prestados (Lançamento, Fusão, etc.)</p>
+            </div>
+          </div>
+          <div class="header-actions">
+            <button class="btn btn-primary" id="btn-open-add-service">
+              <i data-lucide="plus"></i>
+              <span>Novo Serviço</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="data-view-container">
+          <div id="services-grid" class="data-grid" style="grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));">
+            <!-- Renderizado via JS -->
           </div>
         </div>
       </section>
@@ -1125,10 +1306,19 @@
       <form id="material-form" novalidate>
         <input type="hidden" id="edit-material-id" value="" />
         
-        <div class="form-group">
-          <label for="material-name">Nome do Material <span class="required">*</span></label>
-          <input type="text" id="material-name" placeholder="Ex: Cabo Drop Flat AS80 1KM" required />
-          <span class="error-message" id="error-material-name">O nome é obrigatório (mínimo 3 caracteres).</span>
+        <div class="form-row">
+          <div class="form-group col-4">
+            <label for="material-type">Tipo de Item <span class="required">*</span></label>
+            <select id="material-type" required>
+              <option value="material">Material Físico</option>
+              <option value="consumo">Consumo Operacional</option>
+            </select>
+          </div>
+          <div class="form-group col-8">
+            <label for="material-name">Nome do Item <span class="required">*</span></label>
+            <input type="text" id="material-name" placeholder="Ex: Cabo Drop / Gasolina / Almoço" required />
+            <span class="error-message" id="error-material-name">O nome é obrigatório (mínimo 3 caracteres).</span>
+          </div>
         </div>
 
         <div class="form-row">
@@ -1185,7 +1375,86 @@
           <button type="button" class="btn btn-tertiary" id="btn-cancel-material-modal">Cancelar</button>
           <button type="submit" class="btn btn-primary" id="btn-save-material">
             <i data-lucide="check"></i>
-            <span>Salvar Material</span>
+            <span>Salvar Item</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Nova Movimentação de Estoque -->
+  <div class="modal-overlay" id="inventory-transaction-modal">
+    <div class="modal-card" style="max-width: 600px;">
+      <div class="modal-header">
+        <h2 id="transaction-modal-title">Movimentação de Estoque/Consumo</h2>
+        <button class="btn-close-modal" id="btn-close-transaction-modal">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <form id="transaction-form" novalidate>
+        <div class="form-row">
+          <div class="form-group col-6">
+            <label for="txn-type">Tipo de Movimento <span class="required">*</span></label>
+            <select id="txn-type" required>
+              <option value="">Selecione...</option>
+              <option value="entrada">Entrada (Compra/Recebimento)</option>
+              <option value="saida">Saída (Geral)</option>
+              <option value="consumo_obra">Consumo em Obra</option>
+              <option value="ajuste_positivo">Ajuste Positivo</option>
+              <option value="ajuste_negativo">Ajuste Negativo</option>
+            </select>
+          </div>
+          <div class="form-group col-6">
+            <label for="txn-date">Data <span class="required">*</span></label>
+            <input type="date" id="txn-date" required />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="txn-item">Item <span class="required">*</span></label>
+          <select id="txn-item" required>
+            <option value="">Selecione o item...</option>
+          </select>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group col-6">
+            <label for="txn-qty">Quantidade <span class="required">*</span></label>
+            <input type="number" id="txn-qty" placeholder="Ex: 5" min="0.01" step="any" required />
+          </div>
+          <div class="form-group col-6">
+            <label for="txn-value">Valor Total Pago (Opcional)</label>
+            <div class="input-prefix-wrapper">
+              <span class="input-prefix">R$</span>
+              <input type="number" id="txn-value" placeholder="0.00" min="0" step="0.01" />
+            </div>
+            <p class="form-hint" style="font-size: 11px; margin-top: 4px; color: var(--text-secondary);">Deixe em branco para usar o valor cadastrado.</p>
+          </div>
+        </div>
+
+        <div class="form-group" id="txn-deployment-wrapper" style="display: none;">
+          <label for="txn-deployment">Obra Vinculada <span class="required">*</span></label>
+          <select id="txn-deployment">
+            <option value="">Selecione a obra (Lançamento)...</option>
+          </select>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group col-6">
+            <label for="txn-responsible">Responsável</label>
+            <input type="text" id="txn-responsible" placeholder="Nome do responsável" />
+          </div>
+          <div class="form-group col-6">
+            <label for="txn-obs">Observação</label>
+            <input type="text" id="txn-obs" placeholder="Ex: NF 1234, Almoço da equipe..." />
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-tertiary" id="btn-cancel-transaction-modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="btn-save-transaction">
+            <i data-lucide="check"></i>
+            <span>Salvar Movimento</span>
           </button>
         </div>
       </form>
@@ -1584,10 +1853,112 @@
     </div>
   </div>
 
+  <!-- Modal de Serviço -->
+  <div class="modal-overlay" id="service-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2 id="service-modal-title">Novo Serviço</h2>
+        <button class="btn-close-modal" id="btn-close-service-modal">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <form id="service-form" novalidate>
+        <div class="modal-body">
+          <input type="hidden" id="service-id" />
+          
+          <div class="form-group">
+            <label for="service-name">Nome do Serviço <span class="required">*</span></label>
+            <input type="text" id="service-name" placeholder="Ex: Lançamento Subterrâneo" required />
+            <span class="error-message" id="error-service-name">Informe o nome do serviço.</span>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group" style="flex:1;">
+              <label for="service-unit">Unidade de Medida <span class="required">*</span></label>
+              <select id="service-unit" required>
+                <option value="" disabled selected>Selecione...</option>
+                <option value="Metro">Metro</option>
+                <option value="KM">KM</option>
+                <option value="Unidade">Unidade</option>
+                <option value="Caixa">Caixa</option>
+                <option value="Hora">Hora</option>
+                <option value="Diária">Diária</option>
+                <option value="Mês">Mês</option>
+              </select>
+              <span class="error-message" id="error-service-unit">Selecione uma unidade.</span>
+            </div>
+            
+            <div class="form-group" style="flex:1;">
+              <label for="service-value">Valor Padrão (R$) <span class="required">*</span></label>
+              <input type="number" id="service-value" placeholder="0,00" min="0" step="0.01" required />
+              <span class="error-message" id="error-service-value">Valor inválido.</span>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label for="service-desc">Descrição / Observações</label>
+            <textarea id="service-desc" rows="3" placeholder="Detalhes opcionais..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" id="btn-cancel-service-modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Salvar Serviço</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- ==================== TOAST NOTIFICATIONS ==================== -->
   <div class="toast-container" id="toast-container"></div>
 
-  <!-- Supabase CDN Client -->
+  <!-- Modal: Adicionar Despesa Extra -->
+  <div class="modal" id="expense-modal">
+    <div class="modal-content" style="max-width: 500px;">
+      <div class="modal-header">
+        <h3 id="expense-modal-title">Registrar Despesa Extra</h3>
+        <button class="close-modal" id="btn-close-expense-modal"><i data-lucide="x"></i></button>
+      </div>
+      <form id="expense-form">
+        <div class="form-group">
+          <label class="form-label" for="expense-deployment-id">Obra Relacionada <span class="required">*</span></label>
+          <select id="expense-deployment-id" class="form-input" required>
+            <option value="">Selecione uma obra...</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="expense-type">Tipo de Despesa <span class="required">*</span></label>
+          <select id="expense-type" class="form-input" required>
+            <option value="servicos">Serviços Tercerizados / Mão de Obra</option>
+            <option value="consumo_operacional">Consumo Operacional (Alimentação, etc)</option>
+            <option value="combustivel">Combustível / Pedágio</option>
+            <option value="hospedagem">Hospedagem</option>
+            <option value="manutencao_veiculo">Manutenção de Veículo</option>
+            <option value="ferramentas">Compra de Ferramentas</option>
+            <option value="outros">Outros</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="expense-value">Valor (R$) <span class="required">*</span></label>
+          <input type="number" id="expense-value" class="form-input" step="0.01" min="0" required placeholder="0.00">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="expense-date">Data</label>
+          <input type="date" id="expense-date" class="form-input">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="expense-description">Descrição Breve</label>
+          <input type="text" id="expense-description" class="form-input" placeholder="Ex: Almoço da equipe na terça-feira">
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-outline" id="btn-cancel-expense">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Salvar Despesa</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Chart.js and Supabase CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <!-- JavaScript Bundle File -->
   <script src="app.js"></script>

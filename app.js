@@ -29,12 +29,15 @@ const STATUS_LABELS = {
 // --- Mock Data ---
 const MOCK_STATE = {
   materials: [],
+  inventoryTransactions: [], // NEW
   deployments: [],
   deliveries: [],
   consumptions: [],
   returns: [],
   teams: [],
-  expenses: []
+  expenses: [],
+  laborPayments: [],
+  services: []
 };
 
 // ==========================================
@@ -118,6 +121,8 @@ class FibraStore {
         if (!parsed.teams) parsed.teams = [];
         if (!parsed.materials) parsed.materials = [];
         if (!parsed.expenses) parsed.expenses = [];
+        if (!parsed.laborPayments) parsed.laborPayments = [];
+        if (!parsed.services) parsed.services = [];
         if (parsed.deployments) {
           parsed.deployments.forEach(d => {
             if (d.city === undefined || d.city === null) {
@@ -211,6 +216,24 @@ class FibraStore {
         console.warn('Tabela "expenses" não configurada no Supabase Cloud. Usando base local para despesas.');
       }
 
+      // Safe retrieval of labor payments from Supabase (may not exist)
+      let sbLaborPayments = [];
+      try {
+        const { data: laborData, error: errLabor } = await supabaseClient.from('labor_payments').select('*');
+        if (!errLabor && laborData) {
+          sbLaborPayments = laborData.map(l => ({
+            id: l.id,
+            deploymentId: l.deployment_id || l.deploymentId,
+            team: l.team,
+            description: l.description,
+            value: parseFloat(l.value),
+            date: l.date || new Date().toISOString().split('T')[0]
+          }));
+        }
+      } catch (e) {
+        console.warn('Tabela "labor_payments" não configurada no Supabase Cloud. Usando base local para pagamentos de mão de obra.');
+      }
+
       // Map back to memory structure
       const freshState = {
         materials: materials.map(m => ({
@@ -275,7 +298,8 @@ class FibraStore {
           { id: 'team_alfa', name: 'Equipe Alfa', responsible: 'Carlos Eduardo' },
           { id: 'team_beta', name: 'Equipe Beta', responsible: 'Anderson Silva' }
         ]),
-        expenses: sbExpenses.length > 0 ? sbExpenses : (this.state.expenses || [])
+        expenses: sbExpenses.length > 0 ? sbExpenses : (this.state.expenses || []),
+        laborPayments: sbLaborPayments.length > 0 ? sbLaborPayments : (this.state.laborPayments || [])
       };
 
       this.state = freshState;
@@ -502,6 +526,42 @@ class FibraStore {
     this.deleteMaterialFromCloud(id);
   }
 
+  // --- Inventory Transactions CRUD ---
+  getInventoryTransactions() {
+    return this.state.inventoryTransactions || [];
+  }
+
+  getInventoryTransactionsByItem(itemId) {
+    return this.getInventoryTransactions().filter(t => t.itemId === itemId);
+  }
+
+  addInventoryTransaction(transactionData) {
+    if (!this.state.inventoryTransactions) this.state.inventoryTransactions = [];
+    const newTransaction = {
+      id: 'txn_' + Math.random().toString(36).substr(2, 9),
+      date: new Date().toISOString().split('T')[0], // fallback
+      ...transactionData
+    };
+    this.state.inventoryTransactions.push(newTransaction);
+    this.saveState();
+    
+    // Auto-update quantity if it's a material
+    if (transactionData.itemId) {
+      const item = this.getMaterial(transactionData.itemId);
+      if (item && item.type === 'material') {
+        const qty = parseFloat(transactionData.quantity) || 0;
+        if (transactionData.type === 'entrada' || transactionData.type === 'devolucao' || transactionData.type === 'ajuste_positivo') {
+          item.quantity += qty;
+        } else if (transactionData.type === 'saida' || transactionData.type === 'consumo_obra' || transactionData.type === 'ajuste_negativo') {
+          item.quantity -= qty;
+        }
+        this.updateMaterial(item.id, { quantity: item.quantity });
+      }
+    }
+    
+    return newTransaction;
+  }
+
   // --- Users CRUD ---
   getUsers() {
     try {
@@ -661,6 +721,95 @@ class FibraStore {
     } catch (err) {
       console.warn('Erro de exclusão de Despesa no Supabase:', err);
     }
+  }
+
+  // --- Labor Payments CRUD ---
+  getLaborPayments() {
+    if (!this.state.laborPayments) this.state.laborPayments = [];
+    return this.state.laborPayments;
+  }
+
+  addLaborPayment(paymentData) {
+    const newPayment = {
+      id: 'labor_' + Math.random().toString(36).substr(2, 9),
+      deploymentId: paymentData.deploymentId,
+      team: paymentData.team.trim(),
+      description: paymentData.description.trim(),
+      value: parseFloat(paymentData.value),
+      date: paymentData.date || new Date().toISOString().split('T')[0]
+    };
+    this.getLaborPayments().push(newPayment);
+    this.saveState();
+    this.pushLaborPayment(newPayment);
+    return newPayment;
+  }
+
+  deleteLaborPayment(id) {
+    this.state.laborPayments = this.getLaborPayments().filter(lp => lp.id !== id);
+    this.saveState();
+    this.deleteLaborPaymentFromCloud(id);
+  }
+
+  async pushLaborPayment(p) {
+    if (!supabaseClient) return;
+    try {
+      await supabaseClient.from('labor_payments').upsert({
+        id: p.id,
+        deployment_id: p.deploymentId,
+        team: p.team,
+        description: p.description,
+        value: p.value,
+        date: p.date
+      });
+    } catch (err) {
+      console.warn('Erro de sincronização de Pagamento de Mão de Obra no Supabase:', err);
+    }
+  }
+
+  async deleteLaborPaymentFromCloud(id) {
+    if (!supabaseClient) return;
+    try {
+      await supabaseClient.from('labor_payments').delete().eq('id', id);
+    } catch (err) {
+      console.warn('Erro de exclusão de Pagamento de Mão de Obra no Supabase:', err);
+    }
+  }
+
+  // --- Services CRUD ---
+  getServices() {
+    if (!this.state.services) this.state.services = [];
+    return this.state.services;
+  }
+
+  addService(serviceData) {
+    const newService = {
+      id: 'srv_' + Math.random().toString(36).substr(2, 9),
+      name: serviceData.name.trim(),
+      unit: serviceData.unit,
+      unitValue: parseFloat(serviceData.unitValue),
+      description: (serviceData.description || '').trim()
+    };
+    this.getServices().push(newService);
+    this.saveState();
+    return newService;
+  }
+
+  updateService(id, updatedData) {
+    const srv = this.getServices().find(s => s.id === id);
+    if (!srv) throw new Error('Serviço não encontrado.');
+    
+    srv.name = updatedData.name.trim();
+    srv.unit = updatedData.unit;
+    srv.unitValue = parseFloat(updatedData.unitValue);
+    srv.description = (updatedData.description || '').trim();
+    
+    this.saveState();
+    return srv;
+  }
+
+  deleteService(id) {
+    this.state.services = this.getServices().filter(s => s.id !== id);
+    this.saveState();
   }
 
   // --- Deployments CRUD ---
@@ -1065,24 +1214,39 @@ class FibraStore {
   getDeploymentActualCost(deployment) {
     const deliveries = (this.state.deliveries || []).filter(d => d.deploymentId === deployment.id);
     const returns = (this.state.returns || []).filter(r => r.deploymentId === deployment.id);
+    const expenses = (this.state.expenses || []).filter(e => e.deploymentId === deployment.id);
+    const labor = (this.state.laborPayments || []).filter(l => l.deploymentId === deployment.id);
     
-    if (deliveries.length > 0 || returns.length > 0) {
-      const deliveredCost = deliveries.reduce((sum, d) => {
+    let deliveredCost = 0;
+    if (deliveries.length > 0) {
+      deliveredCost = deliveries.reduce((sum, d) => {
         const mat = this.getMaterial(d.materialId);
         const price = mat ? mat.unitValue : d.unitValue || 0;
         return sum + (d.quantity * price);
       }, 0);
+    }
       
-      const returnedCost = returns.reduce((sum, r) => {
+    let returnedCost = 0;
+    if (returns.length > 0) {
+      returnedCost = returns.reduce((sum, r) => {
         const mat = this.getMaterial(r.materialId);
         const price = mat ? mat.unitValue : r.unitValue || 0;
         return sum + (r.quantity * price);
       }, 0);
-      
-      return Math.max(0, deliveredCost - returnedCost);
     }
     
-    return this.getDeploymentTotalCost(deployment);
+    const materialsCost = Math.max(0, deliveredCost - returnedCost);
+    const expensesCost = expenses.reduce((sum, e) => sum + e.value, 0);
+    const laborCost = labor.reduce((sum, l) => sum + l.value, 0);
+    
+    const actualCost = materialsCost + expensesCost + laborCost;
+    
+    // Se não há movimentação, retorna o planejado para não ficar zerado nos gráficos
+    if (deliveries.length === 0 && returns.length === 0 && expenses.length === 0 && labor.length === 0) {
+      return this.getDeploymentTotalCost(deployment);
+    }
+    
+    return actualCost;
   }
 
   // --- Dashboard Aggregations ---
@@ -1416,6 +1580,28 @@ class AppView {
     if (btnCancelMaterialModal) btnCancelMaterialModal.addEventListener('click', () => this.closeMaterialModal());
     if (materialForm) materialForm.addEventListener('submit', (e) => this.handleMaterialSubmit(e));
 
+    // --- Inventory Transaction Modal Bindings ---
+    const btnOpenTxn = document.getElementById('btn-open-inventory-transaction');
+    const btnCloseTxn = document.getElementById('btn-close-transaction-modal');
+    const btnCancelTxn = document.getElementById('btn-cancel-transaction-modal');
+    const txnForm = document.getElementById('transaction-form');
+
+    if (btnOpenTxn) btnOpenTxn.addEventListener('click', () => this.openInventoryTransactionModal());
+    if (btnCloseTxn) btnCloseTxn.addEventListener('click', () => this.closeInventoryTransactionModal());
+    if (btnCancelTxn) btnCancelTxn.addEventListener('click', () => this.closeInventoryTransactionModal());
+    if (txnForm) txnForm.addEventListener('submit', (e) => this.handleTransactionSubmit(e));
+
+    // --- Service Modal Bindings ---
+    const btnOpenAddService = document.getElementById('btn-open-add-service');
+    const btnCloseServiceModal = document.getElementById('btn-close-service-modal');
+    const btnCancelServiceModal = document.getElementById('btn-cancel-service-modal');
+    const serviceForm = document.getElementById('service-form');
+
+    if (btnOpenAddService) btnOpenAddService.addEventListener('click', () => this.openServiceModal());
+    if (btnCloseServiceModal) btnCloseServiceModal.addEventListener('click', () => this.closeServiceModal());
+    if (btnCancelServiceModal) btnCancelServiceModal.addEventListener('click', () => this.closeServiceModal());
+    if (serviceForm) serviceForm.addEventListener('submit', (e) => this.handleServiceSubmit(e));
+
     // --- Deployment Modal Bindings ---
     const btnOpenAddDeployment = document.getElementById('btn-open-add-deployment');
     const btnCloseDeploymentModal = document.getElementById('btn-close-deployment-modal');
@@ -1458,12 +1644,23 @@ class AppView {
     }
 
     // --- Search & Filters Bindings ---
-    // Materials
-    const searchInput = document.getElementById('material-search');
-    const filterSelect = document.getElementById('material-category-filter');
-    if (searchInput) searchInput.addEventListener('input', () => this.renderStockList());
-    if (filterSelect) filterSelect.addEventListener('change', () => this.renderStockList());
-
+    // Materials / Inventory
+    const invSearchInput = document.getElementById('inv-search');
+    const invTypeFilter = document.getElementById('inv-type-filter');
+    const invCatFilter = document.getElementById('inv-category-filter');
+    const invBtnClear = document.getElementById('btn-inv-clear-filters');
+    
+    if (invSearchInput) invSearchInput.addEventListener('input', () => this.renderStockList());
+    if (invTypeFilter) invTypeFilter.addEventListener('change', () => this.renderStockList());
+    if (invCatFilter) invCatFilter.addEventListener('change', () => this.renderStockList());
+    if (invBtnClear) {
+      invBtnClear.addEventListener('click', () => {
+        if (invSearchInput) invSearchInput.value = '';
+        if (invTypeFilter) invTypeFilter.value = 'todos';
+        if (invCatFilter) invCatFilter.value = 'todos';
+        this.renderStockList();
+      });
+    }
     // Deployments
     const depSearch = document.getElementById('deployment-search');
     const depFilter = document.getElementById('deployment-status-filter');
@@ -1547,6 +1744,21 @@ class AppView {
     const returnForm = document.getElementById('return-form');
     if (returnForm) returnForm.addEventListener('submit', (e) => this.handleReturnSubmit(e));
 
+    // Campo - Pagamento de Mão de Obra
+    const payDepSelect = document.getElementById('pay-deployment-id');
+    if (payDepSelect) {
+      payDepSelect.addEventListener('change', (e) => {
+        this.handlePayDeploymentChange(e.target.value);
+      });
+    }
+
+    const laborPaymentForm = document.getElementById('labor-payment-form');
+    if (laborPaymentForm) {
+      laborPaymentForm.addEventListener('submit', (e) => {
+        this.handleLaborPaymentSubmit(e);
+      });
+    }
+
     // Relatórios
     const reportDepSelect = document.getElementById('report-deployment-id');
     if (reportDepSelect) {
@@ -1623,6 +1835,7 @@ class AppView {
             store.state.consumptions = [];
             store.state.returns = [];
             store.state.expenses = [];
+            store.state.laborPayments = [];
             store.saveState();
 
             // 2. Wipe Supabase tables if connected
@@ -1647,6 +1860,11 @@ class AppView {
                 await supabaseClient.from('expenses').delete().neq('id', '');
               } catch (e) {
                 console.warn('Erro ao limpar despesas no Supabase:', e);
+              }
+              try {
+                await supabaseClient.from('labor_payments').delete().neq('id', '');
+              } catch (e) {
+                console.warn('Erro ao limpar labor_payments no Supabase:', e);
               }
             }
 
@@ -1675,6 +1893,7 @@ class AppView {
             store.state.consumptions = [];
             store.state.returns = [];
             store.state.expenses = [];
+            store.state.laborPayments = [];
             store.saveState();
 
             // 2. Wipe Supabase tables if connected
@@ -1702,6 +1921,11 @@ class AppView {
                 await supabaseClient.from('expenses').delete().neq('id', '');
               } catch (e) {
                 console.warn('Erro ao limpar despesas no Supabase:', e);
+              }
+              try {
+                await supabaseClient.from('labor_payments').delete().neq('id', '');
+              } catch (e) {
+                console.warn('Erro ao limpar labor_payments no Supabase:', e);
               }
             }
 
@@ -1807,7 +2031,7 @@ class AppView {
       titleEl.textContent = 'Gestão de Estoque';
       subtitleEl.textContent = 'Cadastro, edição e controle de níveis mínimos de materiais';
     } else if (sectionId === 'lancamentos') {
-      titleEl.textContent = 'Lançamentos em Campo';
+      titleEl.textContent = 'Planejamento';
       subtitleEl.textContent = 'Gestão técnica de obras, cronogramas de implantação e planejamento de materiais';
     } else if (sectionId === 'entregas') {
       titleEl.textContent = 'Entregas para Lançadores';
@@ -1860,6 +2084,8 @@ class AppView {
       this.renderUsers();
     } else if (this.activeSection === 'equipes') {
       this.renderTeams();
+    } else if (this.activeSection === 'servicos') {
+      this.renderServicesList();
     } else if (this.activeSection === 'custos') {
       this.renderCostCenter();
     }
@@ -1974,100 +2200,168 @@ class AppView {
     const returns = store.state.returns || [];
     const consumptions = store.state.consumptions || [];
     const expenses = store.getExpenses();
+    const laborPayments = store.getLaborPayments();
+    let deployments = store.getDeployments();
 
-    // 1. Stock Value (Patrimônio)
+    // FILTERS
+    const searchFilter = document.getElementById('cost-search')?.value.toLowerCase() || '';
+    const statusFilter = document.getElementById('cost-status-filter')?.value || 'todos';
+
+    // Populate deployments if select exists and is empty
+    const depSelect = document.getElementById('cost-deployment-filter');
+    if (depSelect && depSelect.options.length <= 1) {
+      depSelect.innerHTML = '<option value="todos">Todas as Obras (Lançamentos)</option>' + 
+        store.getDeployments().map(d => `<option value="${d.id}">${d.city ? `${d.city} (${d.name})` : d.name}</option>`).join('');
+    }
+    const depFilter = depSelect?.value || 'todos';
+
+    // Populate responsibles if select exists and is empty
+    const respSelect = document.getElementById('cost-responsible-filter');
+    if (respSelect && respSelect.options.length <= 1) {
+      const uniqueResp = [...new Set(store.getDeployments().map(d => d.responsible).filter(Boolean))];
+      respSelect.innerHTML = '<option value="todos">Todos Responsáveis</option>' + 
+        uniqueResp.map(r => `<option value="${r}">${r}</option>`).join('');
+    }
+    const respFilter = respSelect?.value || 'todos';
+
+    if (searchFilter) {
+      deployments = deployments.filter(d => (d.name.toLowerCase().includes(searchFilter) || (d.city || '').toLowerCase().includes(searchFilter)));
+    }
+    if (statusFilter !== 'todos') {
+      deployments = deployments.filter(d => d.status === statusFilter);
+    }
+    if (respFilter !== 'todos') {
+      deployments = deployments.filter(d => d.responsible === respFilter);
+    }
+    if (depFilter !== 'todos') {
+      deployments = deployments.filter(d => d.id === depFilter);
+    }
+
+    // 1. TOP CARDS CALCS
     const stockVal = materials.reduce((sum, m) => sum + (m.quantity * m.unitValue), 0);
+    const depIds = deployments.map(d => d.id);
+    const scopeDeliveries = deliveries.filter(d => depIds.includes(d.deploymentId));
+    const scopeReturns = returns.filter(r => depIds.includes(r.deploymentId));
+    const scopeConsumptions = consumptions.filter(c => depIds.includes(c.deploymentId));
+    const scopeExpenses = expenses.filter(e => depIds.includes(e.deploymentId));
+    const scopeLabor = laborPayments.filter(lp => depIds.includes(lp.deploymentId));
 
-    // 2. Value in Transit (items on field hands)
-    // Transit = Delivered - Returned - Consumed
-    const deliveredVal = deliveries.reduce((sum, d) => {
+    const deliveredVal = scopeDeliveries.reduce((sum, d) => {
       const mat = store.getMaterial(d.materialId);
-      const price = mat ? mat.unitValue : d.unitValue || 0;
-      return sum + (d.quantity * price);
+      return sum + (d.quantity * (mat ? mat.unitValue : d.unitValue || 0));
     }, 0);
-
-    const returnedVal = returns.reduce((sum, r) => {
+    const returnedVal = scopeReturns.reduce((sum, r) => {
       const mat = store.getMaterial(r.materialId);
-      const price = mat ? mat.unitValue : r.unitValue || 0;
-      return sum + (r.quantity * price);
+      return sum + (r.quantity * (mat ? mat.unitValue : r.unitValue || 0));
     }, 0);
-
-    const consumedVal = consumptions.reduce((sum, c) => {
+    const consumedVal = scopeConsumptions.reduce((sum, c) => {
       const mat = store.getMaterial(c.materialId);
-      const price = mat ? mat.unitValue : c.unitValue || 0;
-      return sum + (c.quantity * price);
+      return sum + (c.quantity * (mat ? mat.unitValue : c.unitValue || 0));
     }, 0);
 
     const transitVal = Math.max(0, deliveredVal - returnedVal - consumedVal);
+    const laborVal = scopeLabor.reduce((sum, lp) => sum + lp.value, 0);
+    const extraExpensesVal = scopeExpenses.reduce((sum, e) => sum + e.value, 0);
+    
+    const inventoryTransactions = store.getInventoryTransactions() || [];
+    const scopeOpConsumptions = inventoryTransactions.filter(t => t.type === 'consumo_obra' && depIds.includes(t.deploymentId));
+    const opConsumedVal = scopeOpConsumptions.reduce((sum, t) => sum + (t.value || 0), 0);
 
-    // 3. Labor Value (Planejado em serviços)
-    const deploymentsList = store.getDeployments() || [];
-    const laborVal = deploymentsList.reduce((sum, d) => sum + store.getLaborTotalCost(d), 0);
+    const totalCostVal = consumedVal + extraExpensesVal + laborVal + opConsumedVal;
+    
+    // Labor Planned (Global) -> Total de M.O orçada
+    const laborPlannedVal = deployments.reduce((sum, d) => sum + (d.plannedLaborItems || []).reduce((s, li) => s + (li.quantity * li.unitValue), 0), 0);
 
-    // 4. Extra Expenses
-    const extraExpensesVal = expenses.reduce((sum, e) => sum + e.value, 0);
+    // 2. SECONDARY CARDS CALCS
+    const activeDepsCount = deployments.filter(d => d.status === 'em_andamento').length;
+    let globalPlanned = 0;
+    let overBudgetCount = 0;
+    
+    const tableRowsData = deployments.map(d => {
+      const dConsumptions = consumptions.filter(c => c.deploymentId === d.id);
+      const dConsumedVal = dConsumptions.reduce((sum, c) => {
+        const mat = store.getMaterial(c.materialId);
+        return sum + (c.quantity * (mat ? mat.unitValue : c.unitValue || 0));
+      }, 0);
+      
+      const dExpensesVal = expenses.filter(exp => exp.deploymentId === d.id).reduce((sum, exp) => sum + exp.value, 0);
+      const dLaborVal = laborPayments.filter(lp => lp.deploymentId === d.id).reduce((sum, lp) => sum + lp.value, 0);
+      
+      const dOpConsumptions = inventoryTransactions.filter(t => t.type === 'consumo_obra' && t.deploymentId === d.id);
+      const dOpConsumedVal = dOpConsumptions.reduce((sum, t) => sum + (t.value || 0), 0);
 
-    // 5. Grand Total Cost = Consumido + Despesas Extras
-    const totalCostVal = consumedVal + extraExpensesVal;
+      const totalSpent = dConsumedVal + dExpensesVal + dLaborVal + dOpConsumedVal;
+      const budgetVal = store.getDeploymentTotalCost(d);
+      
+      globalPlanned += budgetVal;
+      if (budgetVal > 0 && totalSpent > budgetVal) overBudgetCount++;
+      
+      return {
+        id: d.id,
+        name: d.city ? `${d.city} (${d.name})` : d.name,
+        budget: budgetVal,
+        materials: dConsumedVal,
+        labor: dLaborVal,
+        expenses: dExpensesVal + dOpConsumedVal, // Add op consumption to expenses for table rendering
+        total: totalSpent,
+        balance: budgetVal - totalSpent
+      };
+    });
 
-    // Inject into DOM safely
-    const costStockEl = document.getElementById('cost-stock-val');
-    if (costStockEl) {
-      costStockEl.textContent = `R$ ${stockVal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-    }
-    const costTransitEl = document.getElementById('cost-transit-val');
-    if (costTransitEl) {
-      costTransitEl.textContent = `R$ ${transitVal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-    }
-    const costLaborEl = document.getElementById('cost-labor-val');
-    if (costLaborEl) {
-      costLaborEl.textContent = `R$ ${laborVal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-    }
-    const costConsumedEl = document.getElementById('cost-consumed-val');
-    if (costConsumedEl) {
-      costConsumedEl.textContent = `R$ ${consumedVal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-    }
-    const costTotalEl = document.getElementById('cost-total-val');
-    if (costTotalEl) {
-      costTotalEl.textContent = `R$ ${totalCostVal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-    }
+    const avgDepCost = deployments.length > 0 ? totalCostVal / deployments.length : 0;
+    const globalBalance = globalPlanned - totalCostVal;
+    const globalPct = globalPlanned > 0 ? Math.min(Math.round((totalCostVal / globalPlanned) * 100), 999) : 0;
 
-    // 5. Populate active deployments select dropdown
-    const depSelect = document.getElementById('expense-deployment-id');
-    if (depSelect) {
-      const deployments = store.getDeployments();
-      const currentSelected = depSelect.value;
-      depSelect.innerHTML = '<option value="">Selecione uma obra...</option>' + deployments.map(d => `
-        <option value="${d.id}" ${d.id === currentSelected ? 'selected' : ''}>
-          ${d.city ? `${d.city} (${d.name})` : d.name}
-        </option>
-      `).join('');
-    }
+    // Inject TOP CARDS
+    const inject = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    const fmt = v => `R$ ${v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    
+    inject('cost-stock-val', fmt(stockVal));
+    inject('cost-transit-val', fmt(transitVal));
+    inject('cost-consumed-val', fmt(consumedVal));
+    inject('cost-labor-val', fmt(laborPlannedVal));
+    inject('cost-expenses-val', fmt(extraExpensesVal));
+    inject('cost-total-val', fmt(totalCostVal));
 
-    // 6. Populate Table: Histórico de Despesas Extras
-    const expenseTbody = document.getElementById('expense-table-body');
-    if (expenseTbody) {
-      if (expenses.length === 0) {
-        expenseTbody.innerHTML = `
-          <tr>
-            <td colspan="4" style="text-align: center; color: var(--text-secondary); padding: 20px;">
-              Nenhuma despesa extra registrada.
-            </td>
-          </tr>
-        `;
+    // Inject SECONDARY CARDS
+    inject('cost-active-deps', activeDepsCount);
+    inject('cost-over-budget', overBudgetCount);
+    inject('cost-avg-dep', fmt(avgDepCost));
+    inject('cost-global-balance', fmt(globalBalance));
+    inject('cost-global-planned', fmt(globalPlanned));
+    inject('cost-global-pct', `${globalPct}%`);
+    
+    const balanceEl = document.getElementById('cost-global-balance');
+    if (balanceEl) balanceEl.className = `card-sm-value ${globalBalance < 0 ? 'text-red' : 'text-green'}`;
+
+    // 3. TABLE RENDERING
+    const tbody = document.getElementById('cost-deployment-table-body');
+    if (tbody) {
+      if (tableRowsData.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; padding: 20px;">Nenhum dado encontrado para os filtros.</td></tr>`;
       } else {
-        expenseTbody.innerHTML = expenses.map(e => {
-          const dep = store.getDeployment(e.deploymentId);
-          const depName = dep ? (dep.city ? `${dep.city} (${dep.name})` : dep.name) : 'Obra Excluída';
+        tbody.innerHTML = tableRowsData.map(r => {
+          let badge = '';
+          if (r.budget === 0) badge = '<span class="badge badge-gray">Sem Planej.</span>';
+          else if (r.total > r.budget) badge = '<span class="badge badge-red" style="background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2);">Estourado</span>';
+          else if (r.total >= r.budget * 0.9) badge = '<span class="badge badge-yellow" style="background: rgba(245, 158, 11, 0.1); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.2);">Atenção</span>';
+          else badge = '<span class="badge badge-green" style="background: rgba(16, 185, 129, 0.1); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.2);">Dentro</span>';
+
+          const balColor = r.balance < 0 ? 'var(--color-danger)' : 'var(--text-primary)';
+          
           return `
             <tr>
-              <td><span style="font-weight: 600; color: var(--text-primary);">${depName}</span></td>
-              <td><span class="badge badge-indigo">${e.type}</span></td>
-              <td style="font-weight: 600; color: var(--text-primary);">R$ ${e.value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+              <td><div style="font-weight: 600;">${r.name}</div></td>
+              <td style="text-align: right;">${fmt(r.budget)}</td>
+              <td style="text-align: right;">${fmt(r.materials)}</td>
+              <td style="text-align: right;">${fmt(r.labor)}</td>
+              <td style="text-align: right;">${fmt(r.expenses)}</td>
+              <td style="text-align: right; font-weight: 700; color: var(--primary-color);">${fmt(r.total)}</td>
+              <td style="text-align: right; color: ${balColor}; font-weight: 600;">${fmt(r.balance)}</td>
+              <td style="text-align: center;">${badge}</td>
               <td style="text-align: center;">
-                <button class="btn-icon delete-btn" title="Excluir Despesa" onclick="appView.handleExpenseDelete('${e.id}')">
-                  <i data-lucide="trash-2"></i>
-                </button>
+                <button class="btn-icon" title="Ver Detalhes" onclick="appView.navigate('lancamentos'); setTimeout(()=>appView.openDeploymentModal('${r.id}'), 100);"><i data-lucide="eye"></i></button>
+                <button class="btn-icon" title="Nova Despesa" onclick="appView.openAddExpenseModal('${r.id}')"><i data-lucide="receipt"></i></button>
               </td>
             </tr>
           `;
@@ -2075,75 +2369,82 @@ class AppView {
       }
     }
 
-    // 7. Populate Table: Orçamento e Custos por Obra
-    const costDeploymentTbody = document.getElementById('cost-deployment-table-body');
-    if (costDeploymentTbody) {
-      const deployments = store.getDeployments();
-      if (deployments.length === 0) {
-        costDeploymentTbody.innerHTML = `
-          <tr>
-            <td colspan="5" style="text-align: center; color: var(--text-secondary); padding: 20px;">
-              Nenhum lançamento ou obra cadastrada.
-            </td>
-          </tr>
-        `;
-      } else {
-        costDeploymentTbody.innerHTML = deployments.map(d => {
-          // Materials Spent: Delivered Value - Returned Value (or Consumed Value)
-          const depDeliveries = deliveries.filter(del => del.deploymentId === d.id);
-          const depReturns = returns.filter(ret => ret.deploymentId === d.id);
-          
-          const depDeliveredVal = depDeliveries.reduce((sum, del) => {
-            const mat = store.getMaterial(del.materialId);
-            const price = mat ? mat.unitValue : del.unitValue || 0;
-            return sum + (del.quantity * price);
-          }, 0);
-          
-          const depReturnedVal = depReturns.reduce((sum, ret) => {
-            const mat = store.getMaterial(ret.materialId);
-            const price = mat ? mat.unitValue : ret.unitValue || 0;
-            return sum + (ret.quantity * price);
-          }, 0);
-
-          const materialsCost = Math.max(0, depDeliveredVal - depReturnedVal);
-
-          // Extra operational expenses for this deployment
-          const depExpensesVal = expenses.filter(exp => exp.deploymentId === d.id).reduce((sum, exp) => sum + exp.value, 0);
-
-          // Total actual spent on this deployment
-          const totalSpent = materialsCost + depExpensesVal;
-
-          // Budget from planned materials
-          const budgetVal = store.getDeploymentTotalCost(d);
-
-          // Threshold / Budget status badge
-          let statusBadge = '';
-          if (budgetVal === 0) {
-            statusBadge = '<span class="badge badge-gray">Sem Planej.</span>';
-          } else if (totalSpent > budgetVal) {
-            statusBadge = '<span class="badge badge-red" style="background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2);">Estourado</span>';
-          } else if (totalSpent >= budgetVal * 0.9) {
-            statusBadge = '<span class="badge badge-yellow" style="background: rgba(245, 158, 11, 0.1); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.2);">Atenção</span>';
-          } else {
-            statusBadge = '<span class="badge badge-green" style="background: rgba(16, 185, 129, 0.1); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.2);">Dentro</span>';
-          }
-
-          const dName = d.city ? `${d.city} (${d.name})` : d.name;
-
-          return `
-            <tr>
-              <td>
-                <div style="font-weight: 600; color: var(--text-primary);">${dName}</div>
-                <div style="font-size: 10px; color: var(--text-secondary); margin-top: 2px;">Lim: R$ ${budgetVal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-              </td>
-              <td style="text-align: right; color: var(--text-primary);">R$ ${materialsCost.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-              <td style="text-align: right; color: var(--text-primary);">R$ ${depExpensesVal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-              <td style="text-align: right; font-weight: 700; color: var(--primary-color);">R$ ${totalSpent.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-              <td style="text-align: center;">${statusBadge}</td>
-            </tr>
-          `;
-        }).join('');
+    // 4. CHARTS RENDERING
+    if (typeof Chart !== 'undefined') {
+      const barCanvas = document.getElementById('costBarChart');
+      if (barCanvas) {
+        if (window.costBarChartInstance) window.costBarChartInstance.destroy();
+        const sortedForBar = [...tableRowsData].sort((a,b) => b.total - a.total).slice(0, 10);
+        window.costBarChartInstance = new Chart(barCanvas, {
+          type: 'bar',
+          data: {
+            labels: sortedForBar.map(r => r.name.length > 15 ? r.name.substring(0, 15) + '...' : r.name),
+            datasets: [
+              { label: 'Realizado', data: sortedForBar.map(r => r.total), backgroundColor: '#3b82f6', borderRadius: 4 },
+              { label: 'Orçado', data: sortedForBar.map(r => r.budget), backgroundColor: 'rgba(203, 213, 225, 0.6)', borderRadius: 4 }
+            ]
+          },
+          options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } }, scales: { y: { beginAtZero: true }, x: { grid: { display: false } } } }
+        });
       }
+
+      const donutCanvas = document.getElementById('costDonutChart');
+      if (donutCanvas) {
+        if (window.costDonutChartInstance) window.costDonutChartInstance.destroy();
+        window.costDonutChartInstance = new Chart(donutCanvas, {
+          type: 'doughnut',
+          data: {
+            labels: ['Materiais', 'Mão de Obra', 'Despesas Extras'],
+            datasets: [{ data: [consumedVal, laborVal, extraExpensesVal], backgroundColor: ['#3b82f6', '#8b5cf6', '#f59e0b'], borderWidth: 0 }]
+          },
+          options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { position: 'right' } } }
+        });
+      }
+    }
+
+    // 5. EVENT BINDINGS (Deferred to avoid double bindings)
+    const searchEl = document.getElementById('cost-search');
+    if (searchEl && !searchEl.dataset.bound) { searchEl.addEventListener('input', () => this.renderCostCenter()); searchEl.dataset.bound = 'true'; }
+    const statusEl = document.getElementById('cost-status-filter');
+    if (statusEl && !statusEl.dataset.bound) { statusEl.addEventListener('change', () => this.renderCostCenter()); statusEl.dataset.bound = 'true'; }
+    const respEl = document.getElementById('cost-responsible-filter');
+    if (respEl && !respEl.dataset.bound) { respEl.addEventListener('change', () => this.renderCostCenter()); respEl.dataset.bound = 'true'; }
+    const depFilterEl = document.getElementById('cost-deployment-filter');
+    if (depFilterEl && !depFilterEl.dataset.bound) { depFilterEl.addEventListener('change', () => this.renderCostCenter()); depFilterEl.dataset.bound = 'true'; }
+    
+    const btnClear = document.getElementById('btn-cost-clear-filters');
+    if (btnClear && !btnClear.dataset.bound) {
+      btnClear.addEventListener('click', () => {
+        if (searchEl) searchEl.value = '';
+        if (statusEl) statusEl.value = 'todos';
+        if (respEl) respEl.value = 'todos';
+        if (depFilterEl) depFilterEl.value = 'todos';
+        this.renderCostCenter();
+      });
+      btnClear.dataset.bound = 'true';
+    }
+    const btnExport = document.getElementById('btn-export-cost-report');
+    if (btnExport && !btnExport.dataset.bound) {
+      btnExport.addEventListener('click', () => {
+        const header = "Obra/Lancamento,Limite Orcamento,Materiais(Real),Mao de Obra,Despesas Extras,Custo Total,Saldo\n";
+        const rows = tableRowsData.map(r => `"${r.name}",${r.budget},${r.materials},${r.labor},${r.expenses},${r.total},${r.balance}`).join("\n");
+        const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8;' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `relatorio_custos_${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
+      });
+      btnExport.dataset.bound = 'true';
+    }
+    const btnNewBud = document.getElementById('btn-open-cost-planning');
+    if (btnNewBud && !btnNewBud.dataset.bound) {
+      btnNewBud.addEventListener('click', () => { this.navigate('lancamentos'); setTimeout(()=>this.openDeploymentModal(), 100); });
+      btnNewBud.dataset.bound = 'true';
+    }
+    const btnNewExp = document.getElementById('btn-open-cost-expense');
+    if (btnNewExp && !btnNewExp.dataset.bound) {
+      btnNewExp.addEventListener('click', () => this.openAddExpenseModal());
+      btnNewExp.dataset.bound = 'true';
     }
 
     if (window.lucide) {
@@ -2240,6 +2541,64 @@ class AppView {
     }
   }
 
+  openAddExpenseModal(preselectedDeploymentId = null) {
+    const modal = document.getElementById('expense-modal');
+    const form = document.getElementById('expense-form');
+    if (!modal || !form) return;
+
+    // Reset Form
+    form.reset();
+
+    // Reset Error Classes
+    form.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+    form.querySelectorAll('.has-error').forEach(el => el.classList.remove('has-error'));
+
+    // Set Date default
+    const dateEl = document.getElementById('expense-date');
+    if (dateEl) {
+      dateEl.value = new Date().toISOString().split('T')[0];
+    }
+
+    // Populate Deployments Dropdown
+    const depSelect = document.getElementById('expense-deployment-id');
+    if (depSelect) {
+      const deployments = store.getDeployments();
+      depSelect.innerHTML = '<option value="">Selecione uma obra...</option>' + deployments.map(d => `
+        <option value="${d.id}">
+          ${d.city ? `${d.city} (${d.name})` : d.name}
+        </option>
+      `).join('');
+
+      // Auto-select if passed
+      if (preselectedDeploymentId) {
+        depSelect.value = preselectedDeploymentId;
+      }
+    }
+
+    // Bind Close Button if not already bound
+    const btnClose = document.getElementById('btn-close-expense-modal');
+    const btnCancel = document.getElementById('btn-cancel-expense');
+
+    const closeHandler = () => this.closeAddExpenseModal();
+    if (btnClose && !btnClose.dataset.bound) {
+      btnClose.addEventListener('click', closeHandler);
+      btnClose.dataset.bound = 'true';
+    }
+    if (btnCancel && !btnCancel.dataset.bound) {
+      btnCancel.addEventListener('click', closeHandler);
+      btnCancel.dataset.bound = 'true';
+    }
+
+    modal.classList.add('active');
+  }
+
+  closeAddExpenseModal() {
+    const modal = document.getElementById('expense-modal');
+    if (modal) {
+      modal.classList.remove('active');
+    }
+  }
+
   handleExpenseSubmit(e) {
     e.preventDefault();
 
@@ -2247,6 +2606,7 @@ class AppView {
     const typeEl = document.getElementById('expense-type');
     const valueEl = document.getElementById('expense-value');
     const descEl = document.getElementById('expense-description');
+    const dateEl = document.getElementById('expense-date');
 
     let isValid = true;
     isValid = this.validateField(deploymentIdEl, deploymentIdEl.value !== '') && isValid;
@@ -2254,7 +2614,6 @@ class AppView {
     
     const valVal = parseFloat(valueEl.value);
     isValid = this.validateField(valueEl, !isNaN(valVal) && valVal > 0) && isValid;
-    isValid = this.validateField(descEl, descEl.value.trim().length >= 3) && isValid;
 
     if (!isValid) {
       showToast('Por favor, preencha os campos obrigatórios corretamente.', 'error');
@@ -2266,24 +2625,17 @@ class AppView {
         deploymentId: deploymentIdEl.value,
         type: typeEl.value,
         value: valVal,
-        description: descEl.value.trim()
+        description: descEl.value.trim() || typeEl.value,
+        date: dateEl ? dateEl.value : null
       });
       showToast('Despesa registrada com sucesso!', 'success');
 
-      // Reset form fields
-      deploymentIdEl.value = '';
-      typeEl.value = 'Combustível';
-      valueEl.value = '';
-      descEl.value = '';
-
-      // Reset error classes if any
-      [deploymentIdEl, typeEl, valueEl, descEl].forEach(el => {
-        el.classList.remove('is-invalid');
-        const parent = el.closest('.form-group');
-        if (parent) parent.classList.remove('has-error');
-      });
-
-      this.renderCostCenter();
+      this.closeAddExpenseModal();
+      
+      // If we are in the cost center, re-render it
+      if (this.activeSection === 'custos') {
+        this.renderCostCenter();
+      }
     } catch (err) {
       showToast('Erro ao registrar despesa: ' + err.message, 'error');
     }
@@ -2378,32 +2730,40 @@ class AppView {
       ? store.getDeployment(this.selectedDashboardDeploymentId)
       : null;
 
-    const valueEl   = document.getElementById('launch-cost-value');
-    const pctEl     = document.getElementById('launch-cost-pct');
-    const barEl     = document.getElementById('launch-cost-bar');
-    const plannedEl = document.getElementById('launch-cost-planned');
-    const countEl   = document.getElementById('launch-cost-count');
-    const subtitleEl = document.getElementById('launch-cost-subtitle');
+    const valueEl   = document.getElementById('dash-cost-real');
+    const pctEl     = document.getElementById('dash-cost-pct');
+    const plannedEl = document.getElementById('dash-cost-planned');
+    const countEl   = document.getElementById('dash-cost-count');
 
     if (!valueEl) return;
 
     if (!dep) {
       valueEl.textContent   = 'R$ 0,00';
       if (pctEl)     pctEl.textContent     = '0%';
-      if (barEl)     barEl.style.width     = '0%';
       if (plannedEl) plannedEl.textContent = 'R$ 0,00';
       if (countEl)   countEl.textContent   = '0 registros';
-      if (subtitleEl) subtitleEl.textContent = 'Nenhum lançamento selecionado';
       return;
     }
 
-    // Custo real = soma de (consumo.quantity × preço do material)
+    // Custo real = soma de consumos + pagamentos de mão de obra + despesas extras
     const consumptions = (store.state.consumptions || []).filter(c => c.deploymentId === dep.id);
-    const realCost = consumptions.reduce((sum, c) => {
+    const labor = (store.state.laborPayments || []).filter(l => l.deploymentId === dep.id);
+    const expenses = (store.state.expenses || []).filter(e => e.deploymentId === dep.id);
+    
+    const materialsCost = consumptions.reduce((sum, c) => {
       const mat = store.getMaterial(c.materialId);
       const price = mat ? mat.unitValue : (c.unitValue || 0);
       return sum + (c.quantity * price);
     }, 0);
+    
+    const laborCost = labor.reduce((sum, l) => sum + l.value, 0);
+    const expensesCost = expenses.reduce((sum, e) => sum + e.value, 0);
+
+    const inventoryTransactions = store.getInventoryTransactions() || [];
+    const opConsumptions = inventoryTransactions.filter(t => t.type === 'consumo_obra' && t.deploymentId === dep.id);
+    const opConsumptionsCost = opConsumptions.reduce((sum, t) => sum + (t.value || 0), 0);
+
+    const realCost = materialsCost + laborCost + expensesCost + opConsumptionsCost;
 
     // Custo planejado total (materiais + mão de obra)
     const plannedCost = store.getDeploymentTotalCost(dep);
@@ -2411,17 +2771,15 @@ class AppView {
     // Percentual executado
     const pct = plannedCost > 0 ? Math.min(Math.round((realCost / plannedCost) * 100), 999) : 0;
 
-    // Cor da barra: verde até 80%, laranja até 100%, vermelho acima
-    let barColor = 'linear-gradient(90deg, var(--color-primary), #0035A0)';
-    if (pct >= 100) barColor = 'linear-gradient(90deg, #E53935, #C62828)';
-    else if (pct >= 80) barColor = 'linear-gradient(90deg, #8FA000, #8FA000)';
-
     valueEl.textContent = `R$ ${realCost.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-    if (pctEl)     { pctEl.textContent = `${pct}%`; pctEl.style.color = pct >= 100 ? '#E53935' : pct >= 80 ? '#8FA000' : 'var(--color-primary)'; }
-    if (barEl)     { barEl.style.width = `${Math.min(pct, 100)}%`; barEl.style.background = barColor; }
+    if (pctEl) {
+      pctEl.textContent = `${pct}%`;
+      pctEl.style.color = pct >= 100 ? '#EF4444' : pct >= 80 ? '#F59E0B' : '#3B82F6';
+    }
     if (plannedEl) plannedEl.textContent = `R$ ${plannedCost.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-    if (countEl)   countEl.textContent = `${consumptions.length} registro${consumptions.length !== 1 ? 's' : ''}`;
-    if (subtitleEl) subtitleEl.textContent = dep.name;
+    
+    const totalRecords = consumptions.length + opConsumptions.length;
+    if (countEl) countEl.textContent = `${totalRecords} registro${totalRecords !== 1 ? 's' : ''}`;
   }
 
   // --- Render Highlight Active/In-Progress Deployment ---
@@ -2550,105 +2908,75 @@ class AppView {
     }
 
     // Status Badge classes
-    let badgeClass = 'badge-green';
     let statusLabel = 'Em Andamento';
     if (activeDep.status === 'planejamento') {
-      badgeClass = 'badge-amber';
       statusLabel = 'Planejamento';
     } else if (activeDep.status === 'finalizado') {
-      badgeClass = 'badge-blue';
       statusLabel = 'Finalizado';
     }
 
-    cardEl.innerHTML = `
-      <div class="highlight-card-header" style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-        <span class="highlight-id" style="font-size: 16px; font-weight: 800; color: var(--text-primary); font-family: 'Inter', sans-serif; max-width: 210px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${activeDep.name}">${activeDep.name}</span>
-        <span class="badge ${badgeClass}">${statusLabel}</span>
-      </div>
-      <div class="highlight-metrics">
-        <div class="metric-item">
-          <span class="metric-num">${distText}</span>
-          <span class="metric-lbl">Metragem</span>
-        </div>
-        <div class="metric-item">
-          <span class="metric-num">${tempoText}</span>
-          <span class="metric-lbl">Prazo Est.</span>
-        </div>
-        <div class="metric-item">
-          <span class="metric-num">${costText}</span>
-          <span class="metric-lbl">Orçamento</span>
-        </div>
-      </div>
-      
-      <!-- Gradient Slider/Progress -->
-      <div class="gradient-slider-container">
-        <div class="slider-track">
-          <div class="slider-fill" style="width: ${progress}%;"></div>
-          <div class="slider-thumb" style="left: ${progress}%;"></div>
-        </div>
-      </div>
-      
-      <div class="route-details">
-        <div class="route-point">
-          <span class="point-dot dot-origin" title="Responsável"></span>
-          <span class="point-text">Resp: ${activeDep.responsible}</span>
-        </div>
-        <div class="route-point">
-          <span class="point-dot dot-dest" title="Localização"></span>
-          <span class="point-text">Local: ${activeDep.city ? `${activeDep.city} (${activeDep.name})` : activeDep.name}</span>
-        </div>
-      </div>
-    `;
+    // Update new modern dashboard elements
+    const setEl = (id, text) => { const el = document.getElementById(id); if(el) el.textContent = text; };
+    
+    setEl('dash-dep-name', activeDep.name);
+    setEl('dash-dep-status', statusLabel);
+    
+    const badgeEl = document.getElementById('dash-dep-status');
+    if (badgeEl) {
+      badgeEl.className = 'dash-badge'; // reset
+      if (activeDep.status === 'planejamento') {
+        badgeEl.style.background = '#FEF3C7'; badgeEl.style.color = '#D97706';
+      } else if (activeDep.status === 'finalizado') {
+        badgeEl.style.background = '#E0E7FF'; badgeEl.style.color = '#4338CA';
+      } else {
+        badgeEl.style.background = '#D1FAE5'; badgeEl.style.color = '#059669'; // em andamento
+      }
+    }
 
+    setEl('dash-dep-pct', `${progress}%`);
+    setEl('dash-dep-est', `Conclusão estimada: ${diffDays} dias`);
+    const barEl = document.getElementById('dash-dep-bar');
+    if (barEl) barEl.style.width = `${progress}%`;
+
+    setEl('dash-dep-distance', distText);
+    setEl('dash-dep-duration', tempoText);
+    setEl('dash-dep-budget', costText);
+
+    setEl('dash-dep-resp', activeDep.responsible || 'Equipe Principal');
+    setEl('dash-dep-city', activeDep.city ? `${activeDep.city} (${activeDep.name})` : activeDep.name);
+
+    // Update Map Overlay mock values based on deployment
+    setEl('dash-map-marker-name', activeDep.name);
+    setEl('dash-overlay-route', activeDep.name);
+    setEl('dash-overlay-city', activeDep.city || 'Local Padrão');
+    setEl('dash-overlay-team', activeDep.responsible || 'Padrão');
+    setEl('dash-overlay-status', statusLabel);
     if (window.lucide) lucide.createIcons();
   }
 
   renderDashboardMapCard() {
-    const cardEl = document.getElementById('dashboard-map-card');
-    if (!cardEl) return;
+    const mapContainer = document.querySelector('.dash-map-bg');
+    if (!mapContainer) return;
 
     const deployments = store.getDeployments();
     let activeDep = null;
     if (this.selectedDashboardDeploymentId) {
       activeDep = deployments.find(d => d.id === this.selectedDashboardDeploymentId);
     }
-    if (!activeDep) {
-      activeDep = deployments.find(d => d.status === 'em_andamento');
-    }
-    if (!activeDep) {
-      activeDep = deployments.find(d => d.status === 'planejamento');
-    }
-    if (!activeDep && deployments.length > 0) {
-      activeDep = deployments[0];
-    }
+    if (!activeDep && deployments.length > 0) activeDep = deployments[0];
 
     const query = (activeDep && (activeDep.address || activeDep.city)) ? (activeDep.address || activeDep.city) : '';
 
+    // Remove existing iframe if any
+    const existingIframe = mapContainer.querySelector('.real-map-iframe');
+    if (existingIframe) existingIframe.remove();
+
     if (activeDep && query) {
-      cardEl.innerHTML = `
-        <div style="width: 100%; height: 100%; position: relative; background: var(--bg-secondary); border-radius: 20px; overflow: hidden;">
-          <iframe 
-            src="https://maps.google.com/maps?q=${encodeURIComponent(query)}&t=&z=14&ie=UTF8&iwloc=&output=embed" 
-            style="width: 100%; height: 100%; border: 0;" 
-            allowfullscreen="" 
-            loading="lazy">
-          </iframe>
-          <div style="position: absolute; bottom: 16px; left: 16px; right: 16px; background: rgba(24, 26, 26, 0.75); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); padding: 12px 16px; border-radius: 12px; display: flex; align-items: center; gap: 12px; z-index: 10;">
-            <div style="width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: rgba(99, 102, 241, 0.15); color: #818CF8; flex-shrink: 0;">
-              <i data-lucide="map-pin" style="width: 16px; height: 16px;"></i>
-            </div>
-            <div style="flex: 1; min-width: 0;">
-              <div style="font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); margin-bottom: 2px;">Localização Ativa</div>
-              <div style="font-size: 13px; font-weight: 700; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${activeDep.city || activeDep.name}</div>
-              ${activeDep.address ? `<div style="font-size: 11px; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 1px;">${activeDep.address}</div>` : ''}
-            </div>
-          </div>
-        </div>
-      `;
-    } else {
-      cardEl.innerHTML = `
-        <img src="truck_hero.png" alt="Truck Hero Illustration" class="truck-hero-img">
-      `;
+      const iframe = document.createElement('iframe');
+      iframe.className = 'real-map-iframe';
+      iframe.src = `https://maps.google.com/maps?q=${encodeURIComponent(query)}&t=&z=14&ie=UTF8&iwloc=&output=embed`;
+      iframe.style.cssText = 'position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; z-index: 0; filter: contrast(1.1) saturate(1.2); pointer-events: none; opacity: 0.6;';
+      mapContainer.prepend(iframe);
     }
 
     if (window.lucide) lucide.createIcons();
@@ -2773,89 +3101,115 @@ class AppView {
 
   // --- Render Stock (Estoque) ---
   renderStockList() {
-    const grid = document.getElementById('materials-grid');
-    if (!grid) return;
+    const tbody = document.getElementById('inventory-tbody');
+    const emptyState = document.getElementById('inventory-empty-state');
+    if (!tbody || !emptyState) return;
 
-    const query = document.getElementById('material-search').value.toLowerCase().trim();
-    const catFilter = document.getElementById('material-category-filter').value;
+    const query = document.getElementById('inv-search')?.value.toLowerCase().trim() || '';
+    const typeFilter = document.getElementById('inv-type-filter')?.value || 'todos';
+    const catFilter = document.getElementById('inv-category-filter')?.value || 'todos';
 
-    let list = store.getMaterials();
+    // Populate categories filter if empty
+    const catSelect = document.getElementById('inv-category-filter');
+    if (catSelect && catSelect.options.length <= 1) {
+      catSelect.innerHTML = '<option value="todos">Todas Categorias</option>' + 
+        Object.keys(DEFAULT_CATEGORIES).map(k => `<option value="${k}">${DEFAULT_CATEGORIES[k]}</option>`).join('');
+    }
 
-    if (query) list = list.filter(m => m.name.toLowerCase().includes(query));
-    if (catFilter !== 'todos') list = list.filter(m => m.category === catFilter);
+    let items = store.getMaterials() || [];
 
-    if (list.length === 0) {
-      grid.innerHTML = `
-        <div class="empty-state">
-          <i data-lucide="filter" class="icon-large"></i>
-          <h3>Nenhum material encontrado</h3>
-          <p>Tente ajustar a busca ou o filtro de categoria.</p>
-        </div>
-      `;
-      lucide.createIcons();
+    // METRICS CALCS
+    const physicalItems = items.filter(i => i.type !== 'consumo');
+    const opItems = items.filter(i => i.type === 'consumo');
+
+    const physicalVal = physicalItems.reduce((sum, i) => sum + ((i.quantity || 0) * (i.unitValue || 0)), 0);
+    const opVal = opItems.reduce((sum, i) => sum + ((i.quantity || 0) * (i.unitValue || 0)), 0);
+    const lowStockCount = physicalItems.filter(i => (i.quantity || 0) <= (i.minStock || 0)).length;
+
+    // Calculate transit and consumed (physical)
+    const deliveries = store.state.deliveries || [];
+    const returns = store.state.returns || [];
+    const consumptions = store.state.consumptions || [];
+    
+    const deliveredVal = deliveries.reduce((sum, d) => {
+      const mat = store.getMaterial(d.materialId);
+      return sum + (d.quantity * (mat ? mat.unitValue : d.unitValue || 0));
+    }, 0);
+    const returnedVal = returns.reduce((sum, r) => {
+      const mat = store.getMaterial(r.materialId);
+      return sum + (r.quantity * (mat ? mat.unitValue : r.unitValue || 0));
+    }, 0);
+    const consumedVal = consumptions.reduce((sum, c) => {
+      const mat = store.getMaterial(c.materialId);
+      return sum + (c.quantity * (mat ? mat.unitValue : c.unitValue || 0));
+    }, 0);
+    const transitVal = Math.max(0, deliveredVal - returnedVal - consumedVal);
+
+    // Update Cards
+    const elPhysical = document.getElementById('inv-card-physical-val');
+    const elTransit = document.getElementById('inv-card-transit-val');
+    const elConsumed = document.getElementById('inv-card-consumed-val');
+    const elOp = document.getElementById('inv-card-op-val');
+    const elCount = document.getElementById('inv-card-items-count');
+    const elLow = document.getElementById('inv-card-low-stock');
+
+    if (elPhysical) elPhysical.textContent = `R$ ${physicalVal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    if (elTransit) elTransit.textContent = `R$ ${transitVal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    if (elConsumed) elConsumed.textContent = `R$ ${consumedVal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    if (elOp) elOp.textContent = `R$ ${opVal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    if (elCount) elCount.textContent = items.length;
+    if (elLow) elLow.textContent = lowStockCount;
+
+    // FILTERS
+    if (query) items = items.filter(m => m.name.toLowerCase().includes(query));
+    if (typeFilter !== 'todos') {
+      items = items.filter(m => (typeFilter === 'consumo') ? m.type === 'consumo' : m.type !== 'consumo');
+    }
+    if (catFilter !== 'todos') items = items.filter(m => m.category === catFilter);
+
+    if (items.length === 0) {
+      tbody.innerHTML = '';
+      emptyState.style.display = 'block';
+      tbody.parentElement.style.display = 'none';
       return;
     }
 
-    grid.innerHTML = list.map(item => {
-      const isBelowMin = item.quantity <= item.minStock;
-      const isOutOfStock = item.quantity === 0;
+    emptyState.style.display = 'none';
+    tbody.parentElement.style.display = 'table';
+
+    tbody.innerHTML = items.map(item => {
+      const isConsumo = item.type === 'consumo';
+      const isBelowMin = !isConsumo && item.quantity <= item.minStock;
+      const totalValue = (item.quantity || 0) * (item.unitValue || 0);
       
-      let stockBadgeHtml = '';
-      let cardClass = 'material-card';
+      let typeBadge = isConsumo 
+        ? `<span class="badge" style="background: rgba(139, 92, 246, 0.1); color: #8b5cf6;">Consumo Op.</span>`
+        : `<span class="badge" style="background: rgba(59, 130, 246, 0.1); color: #3b82f6;">Material Físico</span>`;
 
-      if (isOutOfStock) {
-        cardClass += ' critical';
-        stockBadgeHtml = `<span class="badge badge-red flex-align"><i data-lucide="x-circle"></i> Esgotado</span>`;
-      } else if (isBelowMin) {
-        cardClass += ' critical';
-        stockBadgeHtml = `<span class="badge badge-amber flex-align"><i data-lucide="alert-triangle"></i> Estoque Baixo</span>`;
-      } else {
-        stockBadgeHtml = `<span class="badge badge-green flex-align"><i data-lucide="check-circle"></i> Seguro</span>`;
-      }
-
-      const itemTotalValue = item.quantity * item.unitValue;
+      let qtyColor = isBelowMin ? 'color: #ef4444; font-weight: bold;' : '';
+      let unitLabel = DEFAULT_UNITS[item.unit] ? DEFAULT_UNITS[item.unit].toLowerCase() : item.unit;
 
       return `
-        <div class="${cardClass}">
-          <div class="material-card-header">
-            <span class="category-tag">${DEFAULT_CATEGORIES[item.category]}</span>
-            <div class="material-card-actions">
-              <button class="btn-icon" title="Editar Material" onclick="appView.openMaterialEditModal('${item.id}')">
-                <i data-lucide="pencil"></i>
-              </button>
-              <button class="btn-icon delete-btn" title="Excluir Material" onclick="appView.handleMaterialDelete('${item.id}')">
-                <i data-lucide="trash-2"></i>
-              </button>
-            </div>
-          </div>
-          
-          <h3 class="material-name">${item.name}</h3>
-
-          <div class="material-stats-list">
-            <div class="stat-row">
-              <span class="stat-label">Quantidade Física:</span>
-              <span class="stat-value quantity-highlight">
-                ${item.quantity.toLocaleString('pt-BR')} ${DEFAULT_UNITS[item.unit].toLowerCase()}
-              </span>
-            </div>
-            <div class="stat-row">
-              <span class="stat-label">Preço Unitário:</span>
-              <span class="stat-value">R$ ${item.unitValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-            </div>
-            <div class="stat-row">
-              <span class="stat-label">Mínimo Crítico:</span>
-              <span class="stat-value text-secondary">${item.minStock.toLocaleString('pt-BR')} ${item.unit === 'metro' ? 'm' : 'un'}</span>
-            </div>
-          </div>
-
-          <div class="material-card-footer">
-            <div>
-              <span class="total-value-label">Valoração</span>
-              <div class="total-value-amount">R$ ${itemTotalValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-            </div>
-            ${stockBadgeHtml}
-          </div>
-        </div>
+        <tr>
+          <td>
+            <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">${item.name}</div>
+            <div style="font-size: 12px; color: var(--text-secondary);">${DEFAULT_CATEGORIES[item.category] || item.category}</div>
+          </td>
+          <td>${typeBadge}</td>
+          <td style="text-align: right; ${qtyColor}">
+            ${(item.quantity || 0).toLocaleString('pt-BR')} ${unitLabel}
+          </td>
+          <td style="text-align: right;">R$ ${(item.unitValue || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+          <td style="text-align: right; font-weight: 600;">R$ ${totalValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+          <td style="text-align: center;">
+            <button class="btn-icon" title="Editar Item" onclick="appView.openMaterialEditModal('${item.id}')">
+              <i data-lucide="pencil"></i>
+            </button>
+            <button class="btn-icon delete-btn" title="Excluir" onclick="appView.handleMaterialDelete('${item.id}')">
+              <i data-lucide="trash-2"></i>
+            </button>
+          </td>
+        </tr>
       `;
     }).join('');
 
@@ -2915,6 +3269,7 @@ class AppView {
       }
 
       const totalCost = store.getDeploymentTotalCost(d);
+      const actualCost = store.getDeploymentActualCost(d);
       const plannedCount = d.plannedMaterials.length;
 
       // Formatting Dates
@@ -2960,8 +3315,14 @@ class AppView {
 
               <div class="deployment-row deployment-cost-row">
                 <span>Custo Planejado:</span>
-                <span class="deployment-cost-value">
+                <span class="deployment-cost-value text-secondary">
                   R$ ${totalCost.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+              </div>
+              <div class="deployment-row deployment-cost-row" style="margin-top: 4px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 6px;">
+                <span>Custo Realizado:</span>
+                <span class="deployment-cost-value" style="color: var(--primary-color); font-weight: 700;">
+                  R$ ${actualCost.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
               </div>
             </div>
@@ -3363,11 +3724,139 @@ class AppView {
     });
   }
 
+  // --- Services CRUD Handlers ---
+  openServiceModal(id = null) {
+    this.clearFormErrors('service-form');
+    document.getElementById('service-form').reset();
+    document.getElementById('service-id').value = '';
+
+    if (id) {
+      const srv = store.getServices().find(s => s.id === id);
+      if (srv) {
+        document.getElementById('service-modal-title').textContent = 'Editar Serviço';
+        document.getElementById('service-id').value = srv.id;
+        document.getElementById('service-name').value = srv.name;
+        document.getElementById('service-unit').value = srv.unit;
+        document.getElementById('service-value').value = srv.unitValue;
+        document.getElementById('service-desc').value = srv.description || '';
+      }
+    } else {
+      document.getElementById('service-modal-title').textContent = 'Novo Serviço';
+    }
+
+    const modal = document.getElementById('service-modal');
+    if (modal) modal.classList.add('active');
+  }
+
+  closeServiceModal() {
+    const modal = document.getElementById('service-modal');
+    if (modal) modal.classList.remove('active');
+  }
+
+  handleServiceSubmit(e) {
+    e.preventDefault();
+    const idEl = document.getElementById('service-id');
+    const nameEl = document.getElementById('service-name');
+    const unitEl = document.getElementById('service-unit');
+    const valEl = document.getElementById('service-value');
+    const descEl = document.getElementById('service-desc');
+
+    const valNum = parseFloat(valEl.value);
+
+    let isValid = true;
+    isValid = this.validateField(nameEl, nameEl.value.trim().length >= 3) && isValid;
+    isValid = this.validateField(unitEl, unitEl.value !== '') && isValid;
+    isValid = this.validateField(valEl, !isNaN(valNum) && valNum >= 0) && isValid;
+
+    if (!isValid) return;
+
+    const data = {
+      name: nameEl.value.trim(),
+      unit: unitEl.value,
+      unitValue: valNum,
+      description: descEl.value.trim()
+    };
+
+    try {
+      if (idEl.value) {
+        store.updateService(idEl.value, data);
+        showToast('Serviço atualizado com sucesso.', 'success');
+      } else {
+        store.addService(data);
+        showToast('Serviço cadastrado com sucesso.', 'success');
+      }
+      this.closeServiceModal();
+      this.renderServicesList();
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  }
+
+  deleteServiceItem(id) {
+    if (confirm('Tem certeza que deseja excluir este serviço?')) {
+      store.deleteService(id);
+      showToast('Serviço excluído.', 'info');
+      this.renderServicesList();
+    }
+  }
+
+  editServiceItem(id) {
+    this.openServiceModal(id);
+  }
+
+  renderServicesList() {
+    const grid = document.getElementById('services-grid');
+    if (!grid) return;
+
+    const services = store.getServices();
+
+    if (services.length === 0) {
+      grid.innerHTML = `
+        <div class="empty-state" style="grid-column: 1 / -1;">
+          <i data-lucide="briefcase" class="icon-large text-purple"></i>
+          <h3>Nenhum serviço cadastrado</h3>
+          <p>Clique em "Novo Serviço" para cadastrar serviços e tabelas de preços de mão de obra.</p>
+        </div>
+      `;
+      lucide.createIcons();
+      return;
+    }
+
+    grid.innerHTML = services.map(s => `
+      <div class="card item-card">
+        <div class="item-card-header">
+          <div class="item-icon-box bg-purple-light">
+            <i data-lucide="briefcase" class="text-purple"></i>
+          </div>
+          <div class="item-actions">
+            <button class="btn-icon" onclick="appView.editServiceItem('${s.id}')" title="Editar">
+              <i data-lucide="edit-2"></i>
+            </button>
+            <button class="btn-icon text-red" onclick="appView.deleteServiceItem('${s.id}')" title="Excluir">
+              <i data-lucide="trash-2"></i>
+            </button>
+          </div>
+        </div>
+        <div class="item-card-body">
+          <h3 class="item-title">${s.name}</h3>
+          <p class="item-category" style="margin-bottom:8px;">Unidade: <strong>${s.unit}</strong></p>
+          <div style="font-size:16px; font-weight:700; color:var(--text-primary);">
+            R$ ${s.unitValue.toLocaleString('pt-BR', { minimumFractionDigits:2, maximumFractionDigits:2 })}
+          </div>
+          ${s.description ? `<p style="font-size:12px; color:var(--text-secondary); margin-top:8px;">${s.description}</p>` : ''}
+        </div>
+      </div>
+    `).join('');
+    
+    lucide.createIcons();
+  }
+
   // --- Material CRUD Handler ---
   handleMaterialSubmit(e) {
     e.preventDefault();
 
     const id = document.getElementById('edit-material-id').value;
+    const typeEl = document.getElementById('material-type');
     const nameEl = document.getElementById('material-name');
     const categoryEl = document.getElementById('material-category');
     const unitEl = document.getElementById('material-unit');
@@ -3386,17 +3875,18 @@ class AppView {
     isValid = this.validateField(qtyEl, !isNaN(qtyVal) && qtyVal >= 0) && isValid;
 
     const priceVal = parseFloat(priceEl.value);
-    isValid = this.validateField(priceEl, !isNaN(priceVal) && priceVal > 0) && isValid;
+    isValid = this.validateField(priceEl, !isNaN(priceVal) && priceVal >= 0) && isValid; // changed from >0 to >=0
 
     const minVal = parseFloat(minEl.value);
     isValid = this.validateField(minEl, !isNaN(minVal) && minVal >= 0) && isValid;
 
     if (!isValid) {
-      showToast('Por favor, corrija os erros no formulário do material.', 'error');
+      showToast('Por favor, corrija os erros no formulário do item.', 'error');
       return;
     }
 
     const materialData = {
+      type: typeEl ? typeEl.value : 'material',
       name: nameEl.value.trim(),
       category: categoryEl.value,
       unit: unitEl.value,
@@ -3408,16 +3898,124 @@ class AppView {
     try {
       if (id) {
         store.updateMaterial(id, materialData);
-        showToast('Material atualizado com sucesso!', 'success');
+        showToast('Item atualizado com sucesso!', 'success');
       } else {
         store.addMaterial(materialData);
-        showToast('Material adicionado ao estoque com sucesso!', 'success');
+        showToast('Item adicionado com sucesso!', 'success');
       }
 
       this.closeMaterialModal();
       this.renderAll();
     } catch (err) {
       showToast(err.message, 'error');
+    }
+  }
+
+  // --- Inventory Transactions Logic ---
+  openInventoryTransactionModal() {
+    const modal = document.getElementById('inventory-transaction-modal');
+    const form = document.getElementById('transaction-form');
+    if (!modal || !form) return;
+
+    form.reset();
+    form.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+    form.querySelectorAll('.has-error').forEach(el => el.classList.remove('has-error'));
+
+    const dateEl = document.getElementById('txn-date');
+    if (dateEl) dateEl.value = new Date().toISOString().split('T')[0];
+
+    const itemSelect = document.getElementById('txn-item');
+    if (itemSelect) {
+      const items = store.getMaterials();
+      itemSelect.innerHTML = '<option value="">Selecione o item...</option>' + items.map(i => `
+        <option value="${i.id}">${i.name} (Saldo: ${i.quantity})</option>
+      `).join('');
+    }
+
+    const depSelect = document.getElementById('txn-deployment');
+    if (depSelect) {
+      const deps = store.getDeployments();
+      depSelect.innerHTML = '<option value="">Selecione a obra...</option>' + deps.map(d => `
+        <option value="${d.id}">${d.city ? `${d.city} (${d.name})` : d.name}</option>
+      `).join('');
+    }
+
+    const typeSelect = document.getElementById('txn-type');
+    const wrapperDep = document.getElementById('txn-deployment-wrapper');
+    if (typeSelect && wrapperDep) {
+      const updateDepVisibility = () => {
+        wrapperDep.style.display = typeSelect.value === 'consumo_obra' ? 'block' : 'none';
+        if (typeSelect.value === 'consumo_obra') {
+          depSelect.setAttribute('required', 'true');
+        } else {
+          depSelect.removeAttribute('required');
+        }
+      };
+      if (!typeSelect.dataset.bound) {
+        typeSelect.addEventListener('change', updateDepVisibility);
+        typeSelect.dataset.bound = 'true';
+      }
+      updateDepVisibility();
+    }
+
+    modal.classList.add('active');
+  }
+
+  closeInventoryTransactionModal() {
+    const modal = document.getElementById('inventory-transaction-modal');
+    if (modal) modal.classList.remove('active');
+  }
+
+  handleTransactionSubmit(e) {
+    e.preventDefault();
+
+    const typeEl = document.getElementById('txn-type');
+    const dateEl = document.getElementById('txn-date');
+    const itemEl = document.getElementById('txn-item');
+    const qtyEl = document.getElementById('txn-qty');
+    const valEl = document.getElementById('txn-value');
+    const depEl = document.getElementById('txn-deployment');
+    const respEl = document.getElementById('txn-responsible');
+    const obsEl = document.getElementById('txn-obs');
+
+    let isValid = true;
+    isValid = this.validateField(typeEl, typeEl.value !== '') && isValid;
+    isValid = this.validateField(dateEl, dateEl.value !== '') && isValid;
+    isValid = this.validateField(itemEl, itemEl.value !== '') && isValid;
+    
+    const qtyVal = parseFloat(qtyEl.value);
+    isValid = this.validateField(qtyEl, !isNaN(qtyVal) && qtyVal > 0) && isValid;
+
+    if (typeEl.value === 'consumo_obra') {
+      isValid = this.validateField(depEl, depEl.value !== '') && isValid;
+    }
+
+    if (!isValid) {
+      showToast('Preencha os campos obrigatórios corretamente.', 'error');
+      return;
+    }
+
+    const item = store.getMaterial(itemEl.value);
+    const valueNum = parseFloat(valEl.value);
+    const finalValue = !isNaN(valueNum) && valueNum > 0 ? valueNum : (item ? item.unitValue * qtyVal : 0);
+
+    try {
+      store.addInventoryTransaction({
+        type: typeEl.value,
+        date: dateEl.value,
+        itemId: itemEl.value,
+        quantity: qtyVal,
+        value: finalValue,
+        deploymentId: typeEl.value === 'consumo_obra' ? depEl.value : null,
+        responsible: respEl.value.trim(),
+        observation: obsEl.value.trim()
+      });
+
+      showToast('Movimentação registrada com sucesso!', 'success');
+      this.closeInventoryTransactionModal();
+      this.renderAll();
+    } catch (err) {
+      showToast('Erro ao registrar: ' + err.message, 'error');
     }
   }
 
@@ -3755,10 +4353,26 @@ class AppView {
   populateCampoDropdowns() {
     const consumeDepSelect = document.getElementById('consume-deployment-id');
     const returnDepSelect = document.getElementById('return-deployment-id');
+    const payDepSelect = document.getElementById('pay-deployment-id');
     if (!consumeDepSelect || !returnDepSelect) return;
 
     const prevConsumeDep = consumeDepSelect.value;
     const prevReturnDep = returnDepSelect.value;
+    const prevPayDep = payDepSelect ? payDepSelect.value : '';
+
+    const consumeTeamSelect = document.getElementById('consume-team');
+    const returnTeamSelect = document.getElementById('return-team');
+    const payTeamSelect = document.getElementById('pay-team');
+
+    const prevConsumeTeam = consumeTeamSelect ? consumeTeamSelect.value : '';
+    const prevReturnTeam = returnTeamSelect ? returnTeamSelect.value : '';
+    const prevPayTeam = payTeamSelect ? payTeamSelect.value : '';
+
+    const consumeMatSelect = document.getElementById('consume-material-id');
+    const returnMatSelect = document.getElementById('return-material-id');
+
+    const prevConsumeMat = consumeMatSelect ? consumeMatSelect.value : '';
+    const prevReturnMat = returnMatSelect ? returnMatSelect.value : '';
 
     const deployments = store.getDeployments();
     const optionsHtml = '<option value="">Selecione a obra...</option>' + 
@@ -3767,17 +4381,64 @@ class AppView {
     consumeDepSelect.innerHTML = optionsHtml;
     returnDepSelect.innerHTML = optionsHtml;
 
+    if (payDepSelect) {
+      payDepSelect.innerHTML = optionsHtml;
+    }
+
     if (deployments.some(d => d.id === prevConsumeDep)) {
       consumeDepSelect.value = prevConsumeDep;
+      this.handleConsumeDeploymentChange(prevConsumeDep);
+      if (consumeTeamSelect && prevConsumeTeam) {
+        consumeTeamSelect.value = prevConsumeTeam;
+        this.handleConsumeTeamChange(prevConsumeDep, prevConsumeTeam);
+        if (consumeMatSelect && prevConsumeMat) {
+          consumeMatSelect.value = prevConsumeMat;
+          this.handleConsumeMaterialChange(prevConsumeDep, prevConsumeTeam, prevConsumeMat);
+        }
+      }
     } else {
       this.handleConsumeDeploymentChange('');
     }
 
     if (deployments.some(d => d.id === prevReturnDep)) {
       returnDepSelect.value = prevReturnDep;
+      this.handleReturnDeploymentChange(prevReturnDep);
+      if (returnTeamSelect && prevReturnTeam) {
+        returnTeamSelect.value = prevReturnTeam;
+        this.handleReturnTeamChange(prevReturnDep, prevReturnTeam);
+        if (returnMatSelect && prevReturnMat) {
+          returnMatSelect.value = prevReturnMat;
+          this.handleReturnMaterialChange(prevReturnDep, prevReturnTeam, prevReturnMat);
+        }
+      }
     } else {
       this.handleReturnDeploymentChange('');
     }
+
+    if (payDepSelect) {
+      if (deployments.some(d => d.id === prevPayDep)) {
+        payDepSelect.value = prevPayDep;
+        this.handlePayDeploymentChange(prevPayDep);
+        if (payTeamSelect && prevPayTeam) {
+          payTeamSelect.value = prevPayTeam;
+        }
+      } else {
+        this.handlePayDeploymentChange('');
+      }
+    }
+  }
+
+  handlePayDeploymentChange(deploymentId) {
+    const teamSelect = document.getElementById('pay-team');
+    if (!teamSelect) return;
+
+    teamSelect.innerHTML = '<option value="">Selecione a equipe...</option>';
+
+    if (!deploymentId) return;
+
+    const teams = store.getTeams();
+    teamSelect.innerHTML = '<option value="">Selecione a equipe...</option>' + 
+      teams.map(t => `<option value="${t.name}">${t.name} (Líder: ${t.responsible})</option>`).join('');
   }
 
   handleConsumeDeploymentChange(deploymentId) {
@@ -3956,6 +4617,7 @@ class AppView {
     this.renderTeamBalances();
     this.renderConsumptionsList();
     this.renderReturnsList();
+    this.renderLaborPaymentsList();
   }
 
   renderTeamBalances() {
@@ -4277,6 +4939,52 @@ class AppView {
           <td>${dateFormatted}</td>
           <td style="text-align: right;">
             <button type="button" class="btn-icon delete-btn" title="Excluir Devolução" onclick="appView.handleReturnDelete('${r.id}')">
+              <i data-lucide="trash-2"></i>
+            </button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+    lucide.createIcons();
+  }
+
+  renderLaborPaymentsList() {
+    const tbody = document.getElementById('labor-payments-tbody');
+    if (!tbody) return;
+
+    const list = store.getLaborPayments();
+
+    if (list.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="5" class="text-center text-secondary" style="padding: 16px;">
+            Nenhum pagamento de mão de obra registrado ainda.
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
+    const sorted = [...list].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    tbody.innerHTML = sorted.map(lp => {
+      const dateFormatted = new Date(lp.date + 'T00:00:00').toLocaleDateString('pt-BR');
+      const valFormatted = lp.value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      const dep = store.getDeployment(lp.deploymentId);
+      const depName = dep ? dep.name : 'Obra Removida';
+
+      return `
+        <tr>
+          <td>
+            <strong>${lp.team}</strong>
+            <div style="font-size: 10px; color: var(--text-secondary); margin-top: 2px;">${depName}</div>
+          </td>
+          <td>${lp.description}</td>
+          <td style="color: var(--primary-color); font-weight: 600;">R$ ${valFormatted}</td>
+          <td>${dateFormatted}</td>
+          <td style="text-align: right;">
+            <button type="button" class="btn-icon delete-btn" title="Excluir Pagamento" onclick="appView.handleLaborPaymentDelete('${lp.id}')">
               <i data-lucide="trash-2"></i>
             </button>
           </td>
@@ -4734,6 +5442,68 @@ class AppView {
       try {
         store.deleteReturn(id);
         showToast('Devolução estornada com sucesso.', 'info');
+        this.renderFieldOps();
+        this.populateCampoDropdowns();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+  }
+
+  handleLaborPaymentSubmit(e) {
+    e.preventDefault();
+
+    const depEl = document.getElementById('pay-deployment-id');
+    const teamEl = document.getElementById('pay-team');
+    const descEl = document.getElementById('pay-description');
+    const qtyEl = document.getElementById('pay-qty');
+    const dateEl = document.getElementById('pay-date');
+
+    if (!depEl || !teamEl || !descEl || !qtyEl || !dateEl) return;
+
+    let isValid = true;
+    isValid = this.validateField(depEl, depEl.value !== '') && isValid;
+    isValid = this.validateField(teamEl, teamEl.value !== '') && isValid;
+    isValid = this.validateField(descEl, descEl.value.trim().length >= 3) && isValid;
+
+    const valVal = parseFloat(qtyEl.value);
+    isValid = this.validateField(qtyEl, !isNaN(valVal) && valVal > 0) && isValid;
+    isValid = this.validateField(dateEl, dateEl.value !== '') && isValid;
+
+    if (!isValid) {
+      showToast('Corrija os erros no formulário de pagamento.', 'error');
+      return;
+    }
+
+    try {
+      store.addLaborPayment({
+        deploymentId: depEl.value,
+        team: teamEl.value,
+        description: descEl.value.trim(),
+        value: valVal,
+        date: dateEl.value
+      });
+
+      showToast('Pagamento de mão de obra registrado com sucesso!', 'success');
+
+      const paymentForm = document.getElementById('labor-payment-form');
+      if (paymentForm) {
+        paymentForm.reset();
+        this.clearFormErrors('labor-payment-form');
+      }
+
+      this.renderFieldOps();
+      this.populateCampoDropdowns();
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  }
+
+  handleLaborPaymentDelete(id) {
+    if (confirm('Deseja realmente excluir este registro de pagamento de mão de obra?')) {
+      try {
+        store.deleteLaborPayment(id);
+        showToast('Registro de pagamento de mão de obra removido.', 'info');
         this.renderFieldOps();
         this.populateCampoDropdowns();
       } catch (err) {
