@@ -28,61 +28,12 @@ const STATUS_LABELS = {
 
 // --- Mock Data ---
 const MOCK_STATE = {
-  materials: [
-    {
-      id: 'm1',
-      name: 'Cabo Drop Flat Compacto AS80 1FO',
-      category: 'cabos',
-      unit: 'metro',
-      quantity: 1200,
-      unitValue: 1.20,
-      minStock: 300
-    },
-    {
-      id: 'm2',
-      name: 'Conector Óptico Fast SC/APC Click',
-      category: 'conectores',
-      unit: 'unidade',
-      quantity: 350,
-      unitValue: 2.80,
-      minStock: 100
-    },
-    {
-      id: 'm3',
-      name: 'Caixa de Emenda Óptica FOSC 24 Fibras',
-      category: 'equipamentos',
-      unit: 'unidade',
-      quantity: 4,
-      unitValue: 189.90,
-      minStock: 8
-    },
-    {
-      id: 'm4',
-      name: 'Suporte BAP 2 Galvanizado',
-      category: 'ferragens',
-      unit: 'unidade',
-      quantity: 120,
-      unitValue: 14.50,
-      minStock: 25
-    },
-    {
-      id: 'm5',
-      name: 'Splitter Óptico PLC 1x8 SC/APC',
-      category: 'conectores',
-      unit: 'unidade',
-      quantity: 8,
-      unitValue: 45.00,
-      minStock: 10
-    }
-  ],
+  materials: [],
   deployments: [],
   deliveries: [],
   consumptions: [],
   returns: [],
-  teams: [
-    { id: 'team_alfa', name: 'Equipe Alfa', responsible: 'Carlos Eduardo' },
-    { id: 'team_beta', name: 'Equipe Beta', responsible: 'Anderson Silva' }
-  ]
+  teams: []
 };
 
 // ==========================================
@@ -163,14 +114,8 @@ class FibraStore {
         if (!parsed.deliveries) parsed.deliveries = [];
         if (!parsed.consumptions) parsed.consumptions = [];
         if (!parsed.returns) parsed.returns = [];
-        if (!parsed.teams) parsed.teams = [
-          { id: 'team_alfa', name: 'Equipe Alfa', responsible: 'Carlos Eduardo' },
-          { id: 'team_beta', name: 'Equipe Beta', responsible: 'Anderson Silva' }
-        ];
-        // Se materials ficou vazio (ex: sync falhou), restaura os mock data
-        if (!parsed.materials || parsed.materials.length === 0) {
-          parsed.materials = JSON.parse(JSON.stringify(MOCK_STATE.materials));
-        }
+        if (!parsed.teams) parsed.teams = [];
+        if (!parsed.materials) parsed.materials = [];
         if (parsed.deployments) {
           parsed.deployments.forEach(d => {
             if (d.city === undefined || d.city === null) {
