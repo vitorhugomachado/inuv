@@ -33,7 +33,8 @@ const MOCK_STATE = {
   deliveries: [],
   consumptions: [],
   returns: [],
-  teams: []
+  teams: [],
+  expenses: []
 };
 
 // ==========================================
@@ -116,6 +117,7 @@ class FibraStore {
         if (!parsed.returns) parsed.returns = [];
         if (!parsed.teams) parsed.teams = [];
         if (!parsed.materials) parsed.materials = [];
+        if (!parsed.expenses) parsed.expenses = [];
         if (parsed.deployments) {
           parsed.deployments.forEach(d => {
             if (d.city === undefined || d.city === null) {
@@ -191,6 +193,24 @@ class FibraStore {
         console.warn('Tabela "teams" não configurada no Supabase Cloud. Usando base local para equipes.');
       }
 
+      // Safe retrieval of expenses from Supabase (may not exist)
+      let sbExpenses = [];
+      try {
+        const { data: expensesData, error: errExpenses } = await supabaseClient.from('expenses').select('*');
+        if (!errExpenses && expensesData) {
+          sbExpenses = expensesData.map(e => ({
+            id: e.id,
+            deploymentId: e.deployment_id || e.deploymentId,
+            type: e.type,
+            value: parseFloat(e.value),
+            description: e.description,
+            date: e.date || new Date().toISOString().split('T')[0]
+          }));
+        }
+      } catch (e) {
+        console.warn('Tabela "expenses" não configurada no Supabase Cloud. Usando base local para despesas.');
+      }
+
       // Map back to memory structure
       const freshState = {
         materials: materials.map(m => ({
@@ -254,7 +274,8 @@ class FibraStore {
         teams: sbTeams.length > 0 ? sbTeams : (this.state.teams || [
           { id: 'team_alfa', name: 'Equipe Alfa', responsible: 'Carlos Eduardo' },
           { id: 'team_beta', name: 'Equipe Beta', responsible: 'Anderson Silva' }
-        ])
+        ]),
+        expenses: sbExpenses.length > 0 ? sbExpenses : (this.state.expenses || [])
       };
 
       this.state = freshState;
@@ -587,6 +608,58 @@ class FibraStore {
       await supabaseClient.from('teams').delete().eq('id', id);
     } catch (e) {
       console.warn('Erro de exclusão de Equipe no Supabase:', e);
+    }
+  }
+
+  // --- Expenses CRUD ---
+  getExpenses() {
+    if (!this.state.expenses) this.state.expenses = [];
+    return this.state.expenses;
+  }
+
+  addExpense(expenseData) {
+    const newExpense = {
+      id: 'expense_' + Math.random().toString(36).substr(2, 9),
+      deploymentId: expenseData.deploymentId,
+      type: expenseData.type,
+      value: parseFloat(expenseData.value),
+      description: expenseData.description.trim(),
+      date: expenseData.date || new Date().toISOString().split('T')[0]
+    };
+    this.getExpenses().push(newExpense);
+    this.saveState();
+    this.pushExpense(newExpense);
+    return newExpense;
+  }
+
+  deleteExpense(id) {
+    this.state.expenses = this.getExpenses().filter(e => e.id !== id);
+    this.saveState();
+    this.deleteExpenseFromCloud(id);
+  }
+
+  async pushExpense(e) {
+    if (!supabaseClient) return;
+    try {
+      await supabaseClient.from('expenses').upsert({
+        id: e.id,
+        deployment_id: e.deploymentId,
+        type: e.type,
+        value: e.value,
+        description: e.description,
+        date: e.date
+      });
+    } catch (err) {
+      console.warn('Erro de sincronização de Despesa no Supabase:', err);
+    }
+  }
+
+  async deleteExpenseFromCloud(id) {
+    if (!supabaseClient) return;
+    try {
+      await supabaseClient.from('expenses').delete().eq('id', id);
+    } catch (err) {
+      console.warn('Erro de exclusão de Despesa no Supabase:', err);
     }
   }
 
@@ -1549,6 +1622,7 @@ class AppView {
             store.state.deliveries = [];
             store.state.consumptions = [];
             store.state.returns = [];
+            store.state.expenses = [];
             store.saveState();
 
             // 2. Wipe Supabase tables if connected
@@ -1568,9 +1642,15 @@ class AppView {
 
               const { error: errDep } = await supabaseClient.from('deployments').delete().neq('id', '');
               if (errDep) console.warn('Erro ao limpar deployments:', errDep);
+
+              try {
+                await supabaseClient.from('expenses').delete().neq('id', '');
+              } catch (e) {
+                console.warn('Erro ao limpar despesas no Supabase:', e);
+              }
             }
 
-            showToast('Todos os lançamentos e consumos foram limpos com sucesso!', 'success');
+            showToast('Todos os lançamentos, consumos e despesas foram limpos com sucesso!', 'success');
             
             // Reset selected dashboard deployment ID
             this.selectedDashboardDeploymentId = null;
@@ -1586,7 +1666,7 @@ class AppView {
     const btnResetStock = document.getElementById('btn-reset-stock-data');
     if (btnResetStock) {
       btnResetStock.addEventListener('click', async () => {
-        if (confirm('ATENÇÃO: Deseja realmente apagar TODOS os materiais em estoque? Para manter a integridade do banco de dados, todos os lançamentos, consumos, entregas e devoluções também serão apagados permanentemente.')) {
+        if (confirm('ATENÇÃO: Deseja realmente apagar TODOS os materiais em estoque? Para manter a integridade do banco de dados, todos os lançamentos, consumos, entregas, devoluções e despesas também serão apagados permanentemente.')) {
           try {
             // 1. Wipe local store memory state
             store.state.materials = [];
@@ -1594,6 +1674,7 @@ class AppView {
             store.state.deliveries = [];
             store.state.consumptions = [];
             store.state.returns = [];
+            store.state.expenses = [];
             store.saveState();
 
             // 2. Wipe Supabase tables if connected
@@ -1616,9 +1697,15 @@ class AppView {
 
               const { error: errMat } = await supabaseClient.from('materials').delete().neq('id', '');
               if (errMat) console.warn('Erro ao limpar materials:', errMat);
+
+              try {
+                await supabaseClient.from('expenses').delete().neq('id', '');
+              } catch (e) {
+                console.warn('Erro ao limpar despesas no Supabase:', e);
+              }
             }
 
-            showToast('Estoque e lançamentos limpos com sucesso!', 'success');
+            showToast('Estoque, lançamentos e despesas limpos com sucesso!', 'success');
             
             // Reset selected dashboard deployment ID
             this.selectedDashboardDeploymentId = null;
@@ -1680,6 +1767,12 @@ class AppView {
     if (registerUserForm) {
       registerUserForm.addEventListener('submit', (e) => this.handleRegisterUserSubmit(e));
     }
+
+    // --- Central de Custos Form Binding ---
+    const expenseForm = document.getElementById('expense-form');
+    if (expenseForm) {
+      expenseForm.addEventListener('submit', (e) => this.handleExpenseSubmit(e));
+    }
   }
 
   navigate(sectionId) {
@@ -1725,6 +1818,9 @@ class AppView {
     } else if (sectionId === 'relatorios') {
       titleEl.textContent = 'Relatórios e Auditoria';
       subtitleEl.textContent = 'Análise financeira por obra, controle de divergências orçamentárias e custos técnicos';
+    } else if (sectionId === 'custos') {
+      titleEl.textContent = 'Central de Custos';
+      subtitleEl.textContent = 'Métricas financeiras integradas, controle de despesas extras e orçamentos de obras';
     } else if (sectionId === 'configuracoes') {
       titleEl.textContent = 'Configurações de Sincronização';
       subtitleEl.textContent = 'Ajuste a conexão em tempo real com o banco de dados Supabase na nuvem';
@@ -1764,6 +1860,8 @@ class AppView {
       this.renderUsers();
     } else if (this.activeSection === 'equipes') {
       this.renderTeams();
+    } else if (this.activeSection === 'custos') {
+      this.renderCostCenter();
     }
 
     if (window.lucide) lucide.createIcons();
@@ -1869,6 +1967,182 @@ class AppView {
     }
   }
 
+  // --- Render Central de Custos ---
+  renderCostCenter() {
+    const materials = store.state.materials || [];
+    const deliveries = store.state.deliveries || [];
+    const returns = store.state.returns || [];
+    const consumptions = store.state.consumptions || [];
+    const expenses = store.getExpenses();
+
+    // 1. Stock Value (Patrimônio)
+    const stockVal = materials.reduce((sum, m) => sum + (m.quantity * m.unitValue), 0);
+
+    // 2. Value in Transit (items on field hands)
+    // Transit = Delivered - Returned - Consumed
+    const deliveredVal = deliveries.reduce((sum, d) => {
+      const mat = store.getMaterial(d.materialId);
+      const price = mat ? mat.unitValue : d.unitValue || 0;
+      return sum + (d.quantity * price);
+    }, 0);
+
+    const returnedVal = returns.reduce((sum, r) => {
+      const mat = store.getMaterial(r.materialId);
+      const price = mat ? mat.unitValue : r.unitValue || 0;
+      return sum + (r.quantity * price);
+    }, 0);
+
+    const consumedVal = consumptions.reduce((sum, c) => {
+      const mat = store.getMaterial(c.materialId);
+      const price = mat ? mat.unitValue : c.unitValue || 0;
+      return sum + (c.quantity * price);
+    }, 0);
+
+    const transitVal = Math.max(0, deliveredVal - returnedVal - consumedVal);
+
+    // 3. Extra Expenses
+    const extraExpensesVal = expenses.reduce((sum, e) => sum + e.value, 0);
+
+    // 4. Grand Total Cost = Consumido + Despesas Extras
+    const totalCostVal = consumedVal + extraExpensesVal;
+
+    // Inject into DOM safely
+    const costStockEl = document.getElementById('cost-stock-val');
+    if (costStockEl) {
+      costStockEl.textContent = `R$ ${stockVal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+    const costTransitEl = document.getElementById('cost-transit-val');
+    if (costTransitEl) {
+      costTransitEl.textContent = `R$ ${transitVal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+    const costConsumedEl = document.getElementById('cost-consumed-val');
+    if (costConsumedEl) {
+      costConsumedEl.textContent = `R$ ${consumedVal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+    const costTotalEl = document.getElementById('cost-total-val');
+    if (costTotalEl) {
+      costTotalEl.textContent = `R$ ${totalCostVal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+
+    // 5. Populate active deployments select dropdown
+    const depSelect = document.getElementById('expense-deployment-id');
+    if (depSelect) {
+      const deployments = store.getDeployments();
+      const currentSelected = depSelect.value;
+      depSelect.innerHTML = '<option value="">Selecione uma obra...</option>' + deployments.map(d => `
+        <option value="${d.id}" ${d.id === currentSelected ? 'selected' : ''}>
+          ${d.city ? `${d.city} (${d.name})` : d.name}
+        </option>
+      `).join('');
+    }
+
+    // 6. Populate Table: Histórico de Despesas Extras
+    const expenseTbody = document.getElementById('expense-table-body');
+    if (expenseTbody) {
+      if (expenses.length === 0) {
+        expenseTbody.innerHTML = `
+          <tr>
+            <td colspan="4" style="text-align: center; color: var(--text-secondary); padding: 20px;">
+              Nenhuma despesa extra registrada.
+            </td>
+          </tr>
+        `;
+      } else {
+        expenseTbody.innerHTML = expenses.map(e => {
+          const dep = store.getDeployment(e.deploymentId);
+          const depName = dep ? (dep.city ? `${dep.city} (${dep.name})` : dep.name) : 'Obra Excluída';
+          return `
+            <tr>
+              <td><span style="font-weight: 600; color: var(--text-primary);">${depName}</span></td>
+              <td><span class="badge badge-indigo">${e.type}</span></td>
+              <td style="font-weight: 600; color: var(--text-primary);">R$ ${e.value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+              <td style="text-align: center;">
+                <button class="btn-icon delete-btn" title="Excluir Despesa" onclick="appView.handleExpenseDelete('${e.id}')">
+                  <i data-lucide="trash-2"></i>
+                </button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      }
+    }
+
+    // 7. Populate Table: Orçamento e Custos por Obra
+    const costDeploymentTbody = document.getElementById('cost-deployment-table-body');
+    if (costDeploymentTbody) {
+      const deployments = store.getDeployments();
+      if (deployments.length === 0) {
+        costDeploymentTbody.innerHTML = `
+          <tr>
+            <td colspan="5" style="text-align: center; color: var(--text-secondary); padding: 20px;">
+              Nenhum lançamento ou obra cadastrada.
+            </td>
+          </tr>
+        `;
+      } else {
+        costDeploymentTbody.innerHTML = deployments.map(d => {
+          // Materials Spent: Delivered Value - Returned Value (or Consumed Value)
+          const depDeliveries = deliveries.filter(del => del.deploymentId === d.id);
+          const depReturns = returns.filter(ret => ret.deploymentId === d.id);
+          
+          const depDeliveredVal = depDeliveries.reduce((sum, del) => {
+            const mat = store.getMaterial(del.materialId);
+            const price = mat ? mat.unitValue : del.unitValue || 0;
+            return sum + (del.quantity * price);
+          }, 0);
+          
+          const depReturnedVal = depReturns.reduce((sum, ret) => {
+            const mat = store.getMaterial(ret.materialId);
+            const price = mat ? mat.unitValue : ret.unitValue || 0;
+            return sum + (ret.quantity * price);
+          }, 0);
+
+          const materialsCost = Math.max(0, depDeliveredVal - depReturnedVal);
+
+          // Extra operational expenses for this deployment
+          const depExpensesVal = expenses.filter(exp => exp.deploymentId === d.id).reduce((sum, exp) => sum + exp.value, 0);
+
+          // Total actual spent on this deployment
+          const totalSpent = materialsCost + depExpensesVal;
+
+          // Budget from planned materials
+          const budgetVal = store.getDeploymentTotalCost(d);
+
+          // Threshold / Budget status badge
+          let statusBadge = '';
+          if (budgetVal === 0) {
+            statusBadge = '<span class="badge badge-gray">Sem Planej.</span>';
+          } else if (totalSpent > budgetVal) {
+            statusBadge = '<span class="badge badge-red" style="background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2);">Estourado</span>';
+          } else if (totalSpent >= budgetVal * 0.9) {
+            statusBadge = '<span class="badge badge-yellow" style="background: rgba(245, 158, 11, 0.1); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.2);">Atenção</span>';
+          } else {
+            statusBadge = '<span class="badge badge-green" style="background: rgba(16, 185, 129, 0.1); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.2);">Dentro</span>';
+          }
+
+          const dName = d.city ? `${d.city} (${d.name})` : d.name;
+
+          return `
+            <tr>
+              <td>
+                <div style="font-weight: 600; color: var(--text-primary);">${dName}</div>
+                <div style="font-size: 10px; color: var(--text-secondary); margin-top: 2px;">Lim: R$ ${budgetVal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+              </td>
+              <td style="text-align: right; color: var(--text-primary);">R$ ${materialsCost.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+              <td style="text-align: right; color: var(--text-primary);">R$ ${depExpensesVal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+              <td style="text-align: right; font-weight: 700; color: var(--primary-color);">R$ ${totalSpent.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+              <td style="text-align: center;">${statusBadge}</td>
+            </tr>
+          `;
+        }).join('');
+      }
+    }
+
+    if (window.lucide) {
+      lucide.createIcons();
+    }
+  }
+
   openTeamEdit(id) {
     const team = store.getTeam(id);
     if (!team) return;
@@ -1954,6 +2228,67 @@ class AppView {
         this.populateCampoDropdowns();
       } catch (err) {
         showToast('Erro ao excluir equipe: ' + err.message, 'error');
+      }
+    }
+  }
+
+  handleExpenseSubmit(e) {
+    e.preventDefault();
+
+    const deploymentIdEl = document.getElementById('expense-deployment-id');
+    const typeEl = document.getElementById('expense-type');
+    const valueEl = document.getElementById('expense-value');
+    const descEl = document.getElementById('expense-description');
+
+    let isValid = true;
+    isValid = this.validateField(deploymentIdEl, deploymentIdEl.value !== '') && isValid;
+    isValid = this.validateField(typeEl, typeEl.value !== '') && isValid;
+    
+    const valVal = parseFloat(valueEl.value);
+    isValid = this.validateField(valueEl, !isNaN(valVal) && valVal > 0) && isValid;
+    isValid = this.validateField(descEl, descEl.value.trim().length >= 3) && isValid;
+
+    if (!isValid) {
+      showToast('Por favor, preencha os campos obrigatórios corretamente.', 'error');
+      return;
+    }
+
+    try {
+      store.addExpense({
+        deploymentId: deploymentIdEl.value,
+        type: typeEl.value,
+        value: valVal,
+        description: descEl.value.trim()
+      });
+      showToast('Despesa registrada com sucesso!', 'success');
+
+      // Reset form fields
+      deploymentIdEl.value = '';
+      typeEl.value = 'Combustível';
+      valueEl.value = '';
+      descEl.value = '';
+
+      // Reset error classes if any
+      [deploymentIdEl, typeEl, valueEl, descEl].forEach(el => {
+        el.classList.remove('is-invalid');
+        const parent = el.closest('.form-group');
+        if (parent) parent.classList.remove('has-error');
+      });
+
+      this.renderCostCenter();
+    } catch (err) {
+      showToast('Erro ao registrar despesa: ' + err.message, 'error');
+    }
+  }
+
+  handleExpenseDelete(id) {
+    if (confirm('Deseja realmente excluir esta despesa extra?')) {
+      try {
+        store.deleteExpense(id);
+        showToast('Despesa extra excluída com sucesso.', 'info');
+        this.renderCostCenter();
+      } catch (err) {
+        showToast('Erro ao excluir despesa: ' + err.message, 'error');
       }
     }
   }

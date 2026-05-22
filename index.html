@@ -102,6 +102,10 @@
           <i data-lucide="bar-chart-2"></i>
           <span>Relatórios</span>
         </a>
+        <a href="#custos" class="nav-link" data-target="custos" data-label="Central de Custos">
+          <i data-lucide="dollar-sign"></i>
+          <span>Central de Custos</span>
+        </a>
         <a href="#equipes" class="nav-link" data-target="equipes" data-label="Equipes">
           <i data-lucide="users"></i>
           <span>Equipes</span>
@@ -797,6 +801,167 @@
           <i data-lucide="bar-chart-2" class="icon-large"></i>
           <h3>Selecione um Lançamento</h3>
           <p>Escolha uma obra no seletor acima para visualizar as métricas de auditoria financeira, desvios e estoques de campo.</p>
+        </div>
+      </section>
+
+      <!-- SEÇÃO: CENTRAL DE CUSTOS -->
+      <section id="custos-section" class="app-section">
+        <!-- Grid de Métricas Financeiras -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px;">
+          <!-- Card: Valor em Estoque -->
+          <div class="metric-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <span class="metric-label" style="font-size: 13px;">Valor em Estoque</span>
+              <div class="metric-icon-box" style="background: rgba(0, 71, 204, 0.1); color: var(--primary-color);">
+                <i data-lucide="package" style="width: 18px; height: 18px;"></i>
+              </div>
+            </div>
+            <h3 class="metric-value" id="cost-stock-val">R$ 0,00</h3>
+            <p style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;">Patrimônio físico no galpão</p>
+          </div>
+
+          <!-- Card: Valor em Trânsito -->
+          <div class="metric-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <span class="metric-label" style="font-size: 13px;">Valor em Trânsito</span>
+              <div class="metric-icon-box" style="background: rgba(212, 237, 26, 0.1); color: #b8cc14;">
+                <i data-lucide="truck" style="width: 18px; height: 18px;"></i>
+              </div>
+            </div>
+            <h3 class="metric-value" id="cost-transit-val">R$ 0,00</h3>
+            <p style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;">Em posse das equipes de campo</p>
+          </div>
+
+          <!-- Card: Valor Consumido -->
+          <div class="metric-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <span class="metric-label" style="font-size: 13px;">Valor Consumido</span>
+              <div class="metric-icon-box" style="background: rgba(63, 204, 221, 0.1); color: var(--secondary-color);">
+                <i data-lucide="flame" style="width: 18px; height: 18px;"></i>
+              </div>
+            </div>
+            <h3 class="metric-value" id="cost-consumed-val">R$ 0,00</h3>
+            <p style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;">Materiais aplicados em campo</p>
+          </div>
+
+          <!-- Card: Custos Operacionais Totais -->
+          <div class="metric-card" style="background: linear-gradient(135deg, rgba(0,71,204,0.05) 0%, rgba(63,204,221,0.05) 100%); border: 1px solid rgba(0,71,204,0.15);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <span class="metric-label" style="font-size: 13px; font-weight: 700; color: var(--primary-color);">Custo Total Realizado</span>
+              <div class="metric-icon-box" style="background: var(--primary-color); color: #fff;">
+                <i data-lucide="trending-up" style="width: 18px; height: 18px;"></i>
+              </div>
+            </div>
+            <h3 class="metric-value" id="cost-total-val" style="color: var(--primary-color);">R$ 0,00</h3>
+            <p style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;">Consumo + Despesas Extras</p>
+          </div>
+        </div>
+
+        <!-- Seção Inferior: Grid de Operações -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; align-items: start;">
+          
+          <!-- Coluna da Esquerda: Lançar Despesas e Histórico -->
+          <div style="display: flex; flex-direction: column; gap: 24px;">
+            <!-- Card Form: Registrar Despesa Extra -->
+            <div class="details-panel" style="max-height: fit-content;">
+              <div class="panel-header">
+                <i data-lucide="dollar-sign" style="color: var(--primary-color);"></i>
+                <h3 style="font-size: 15px; font-weight: 700; margin: 0;">Lançar Despesa Extra</h3>
+              </div>
+              <form id="expense-form" style="margin-top: 16px; display: flex; flex-direction: column; gap: 12px;" novalidate>
+                <div class="form-group">
+                  <label for="expense-deployment-id">Lançamento / Obra</label>
+                  <select id="expense-deployment-id" required style="width: 100%; border: 1px solid var(--border-color); background: var(--bg-primary); padding: 8px 12px; border-radius: 8px; color: var(--text-primary);">
+                    <option value="">Selecione uma obra...</option>
+                  </select>
+                  <div class="error-msg">Por favor, selecione uma obra.</div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                  <div class="form-group">
+                    <label for="expense-type">Tipo de Custo</label>
+                    <select id="expense-type" required style="width: 100%; border: 1px solid var(--border-color); background: var(--bg-primary); padding: 8px 12px; border-radius: 8px; color: var(--text-primary);">
+                      <option value="Combustível">Combustível</option>
+                      <option value="Alimentação">Alimentação</option>
+                      <option value="Hospedagem">Hospedagem</option>
+                      <option value="Ferramentas">Ferramentas</option>
+                      <option value="Mão de Obra">Mão de Obra</option>
+                      <option value="Outros">Outros</option>
+                    </select>
+                    <div class="error-msg">Campo obrigatório.</div>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="expense-value">Valor (R$)</label>
+                    <input type="number" id="expense-value" min="0.01" step="0.01" placeholder="0,00" required style="width: 100%; border: 1px solid var(--border-color); background: var(--bg-primary); padding: 8px 12px; border-radius: 8px; color: var(--text-primary);">
+                    <div class="error-msg">Valor inválido.</div>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="expense-description">Descrição / Justificativa</label>
+                  <input type="text" id="expense-description" placeholder="Ex: Combustível para viagem técnica" required style="width: 100%; border: 1px solid var(--border-color); background: var(--bg-primary); padding: 8px 12px; border-radius: 8px; color: var(--text-primary);">
+                  <div class="error-msg">Por favor, forneça uma justificativa.</div>
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="margin-top: 8px; width: 100%; display: flex; justify-content: center; align-items: center; gap: 8px;">
+                  <i data-lucide="plus" style="width: 16px; height: 16px;"></i>
+                  Registrar Despesa
+                </button>
+              </form>
+            </div>
+
+            <!-- Card Tabela: Histórico de Despesas Extras -->
+            <div class="details-panel" style="max-height: fit-content;">
+              <div class="panel-header">
+                <i data-lucide="history" style="color: var(--secondary-color);"></i>
+                <h3 style="font-size: 15px; font-weight: 700; margin: 0;">Histórico de Despesas</h3>
+              </div>
+              <div style="overflow-x: auto; margin-top: 12px;">
+                <table class="data-table" style="font-size: 12px;">
+                  <thead>
+                    <tr>
+                      <th>Obra</th>
+                      <th>Tipo</th>
+                      <th>Valor</th>
+                      <th style="width: 50px; text-align: center;">Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody id="expense-table-body">
+                    <!-- Renderizado dinamicamente via JS -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Coluna da Direita: Resumo Geral por Obra -->
+          <div class="details-panel" style="flex-grow: 1;">
+            <div class="panel-header" style="justify-content: space-between;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <i data-lucide="pie-chart" style="color: var(--primary-color);"></i>
+                <h3 style="font-size: 15px; font-weight: 700; margin: 0;">Orçamento e Custos por Obra</h3>
+              </div>
+              <span class="badge badge-blue" style="font-size: 10px;">Consolidado</span>
+            </div>
+            <div style="overflow-x: auto; margin-top: 16px;">
+              <table class="data-table" style="font-size: 12px;">
+                <thead>
+                  <tr>
+                    <th>Obra / Lançamento</th>
+                    <th style="text-align: right;">Custo Materiais</th>
+                    <th style="text-align: right;">Despesas Extras</th>
+                    <th style="text-align: right;">Custo Total</th>
+                    <th style="width: 100px; text-align: center;">Status</th>
+                  </tr>
+                </thead>
+                <tbody id="cost-deployment-table-body">
+                  <!-- Renderizado via JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
         </div>
       </section>
 
